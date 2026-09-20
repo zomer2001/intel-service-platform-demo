@@ -44,6 +44,7 @@
     try {
       var url = new URL(window.location.href);
       url.searchParams.set("tab", tabId);
+      if (tabId !== "routes") url.searchParams.delete("focus");
       window.history.replaceState({}, "", url.href);
     } catch (error) { /* file:// 下仍保留当前交互。 */ }
   }

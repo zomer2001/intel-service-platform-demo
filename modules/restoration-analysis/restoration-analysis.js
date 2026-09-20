@@ -1011,6 +1011,13 @@
     else renderParameters(mount);
   }
 
+  function openProjectById(projectId) {
+    var project = data.opensource_projects.find(function (item) { return item.id === projectId; });
+    if (!project) return false;
+    projectDrawer(project);
+    return true;
+  }
+
   window.PlatformModules = window.PlatformModules || {};
-  window.PlatformModules.restorationAnalysis = { render: render };
+  window.PlatformModules.restorationAnalysis = { render: render, openProjectById: openProjectById };
 }());

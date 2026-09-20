@@ -454,6 +454,76 @@
       "数据属性": "研判"
     }
   ],
+  "route_chart": {
+    "title": "Lattice Mesh关键技术路线演化",
+    "target_id": "lattice-mesh",
+    "target_name": "Lattice Mesh",
+    "maturity_stages": [
+      { "value": 1, "label": "能力形成" },
+      { "value": 2, "label": "工程验证" },
+      { "value": 3, "label": "规模应用" },
+      { "value": 4, "label": "体系融合" }
+    ],
+    "routes": [
+      {
+        "id": "distributed-network",
+        "name": "分布式网络",
+        "color": "#2563eb",
+        "service": "在弱网、断连和多节点环境中保持数据连接与任务连续性。",
+        "technology": "去中心化Mesh、动态发现、分布式状态同步与自适应路由。",
+        "maturity_dimension": "resilient-network"
+      },
+      {
+        "id": "data-processing",
+        "name": "数据处理",
+        "color": "#7c3aed",
+        "service": "将多源异构数据转换为可共享、可计算、可治理的共同数据。",
+        "technology": "数据转换、语义归一、多源融合、共同数据层与Schema治理。",
+        "maturity_dimension": "core-network"
+      },
+      {
+        "id": "edge-computing",
+        "name": "边缘计算",
+        "color": "#059669",
+        "service": "把数据处理和任务协同能力下沉到战术边缘与终端设备。",
+        "technology": "边缘节点运行、Local-first处理、资源治理与边云协同。",
+        "maturity_dimension": "deployment"
+      },
+      {
+        "id": "open-integration",
+        "name": "开放集成",
+        "color": "#ea580c",
+        "service": "为第三方系统、传感器和开发者提供标准化接入能力。",
+        "technology": "Open API、SDK、Developer Console、Schema Registry与AI开发工具。",
+        "maturity_dimension": "ecosystem"
+      }
+    ],
+    "node_overrides": {
+      "R001": { "evidence_level": "中高", "maturity_dimension": "resilient-network" },
+      "R002": { "evidence_level": "高", "maturity_dimension": "scale" },
+      "R003": { "evidence_level": "高", "maturity_dimension": "scale" },
+      "R004": { "evidence_level": "高", "maturity_dimension": "deployment" },
+      "R005": { "evidence_level": "中高", "maturity_dimension": "core-network" },
+      "R006": { "evidence_level": "中高", "maturity_dimension": "core-network" },
+      "R007": { "evidence_level": "高", "maturity_dimension": "deployment" },
+      "R008": { "evidence_level": "高", "maturity_dimension": "ecosystem" },
+      "R009": { "evidence_level": "中高", "maturity_dimension": "deployment" },
+      "R010": { "evidence_level": "高", "maturity_dimension": "scale" },
+      "R011": { "evidence_level": "高", "maturity_dimension": "scale" },
+      "R012": { "evidence_level": "高", "maturity_dimension": "deployment" },
+      "R013": { "evidence_level": "高", "maturity_dimension": "ecosystem" },
+      "R014": { "evidence_level": "高", "maturity_dimension": "ecosystem" },
+      "R015": { "evidence_level": "高", "maturity_dimension": "ecosystem" },
+      "R016": { "evidence_level": "中高", "maturity_dimension": "ecosystem", "is_new": true }
+    },
+    "relations": [
+      { "source": "R004", "target": "R007", "type": "汇聚支撑", "description": "边云数据网为共同数据层提供网络底座。" },
+      { "source": "R007", "target": "R012", "type": "体系协同", "description": "共同数据层在边缘与云端协同运行。" },
+      { "source": "R008", "target": "R015", "type": "模式治理", "description": "数据处理侧的Schema能力转化为开放集成治理能力。" },
+      { "source": "R006", "target": "R014", "type": "能力开放", "description": "多源融合能力通过开发工具链向第三方开放。" },
+      { "source": "R015", "target": "R016", "type": "工具演进", "description": "Schema生命周期治理进一步支撑AI辅助开发。" }
+    ]
+  },
   "route_evolution": [
     {
       "route_id": "R001",
@@ -718,6 +788,91 @@
       "数据属性": "Lattice事实+对标演示"
     }
   ],
+  "gap_chart": {
+    "benchmark_label": "Lattice能力表现",
+    "current_label": "当前方案",
+    "target_label": "开源补强目标",
+    "score_max": 100,
+    "details": {
+      "G001": {
+        "short_label": "Mesh架构",
+        "target_score": 82,
+        "priority": "高",
+        "impact": "影响多节点协同、链路恢复和体系扩展能力。",
+        "cause": "当前方案具备基础消息与连接能力，但缺少统一的分布式状态模型、节点自治和故障恢复机制。",
+        "path": "引入去中心化发现、状态复制和多路径路由，先完成小规模故障切换，再扩展到跨节点一致性验证。",
+        "route_nodes": ["R001", "R002", "R004"],
+        "projects": [{ "id": "R04", "name": "go-libp2p" }, { "id": "R01", "name": "NATS Server" }],
+        "validation": "验证节点失联后的路由恢复时间、状态一致性和消息到达率。"
+      },
+      "G002": {
+        "short_label": "弱网运行",
+        "target_score": 81,
+        "priority": "高",
+        "impact": "决定断连、低带宽和高时延环境下的任务连续性。",
+        "cause": "缺少断连自治、缓存重放、冲突合并与恢复后状态收敛的完整机制。",
+        "path": "补充Local-first缓存、断点续传和冲突合并策略，并在多种丢包与时延组合下验证。",
+        "route_nodes": ["R001", "R009", "R012"],
+        "projects": [{ "id": "R08", "name": "Automerge" }, { "id": "R04", "name": "go-libp2p" }],
+        "validation": "验证断连期间可用性、恢复同步耗时、冲突合并正确率和重复消息率。"
+      },
+      "G003": {
+        "short_label": "异构数据",
+        "target_score": 80,
+        "priority": "最高",
+        "impact": "直接影响不同传感器、平台和任务系统之间的数据互操作。",
+        "cause": "缺少统一数据模型、语义映射和Schema版本兼容机制，接口适配仍依赖逐项开发。",
+        "path": "建立统一Schema注册中心，形成格式转换、语义映射、兼容性检查和版本发布流程。",
+        "route_nodes": ["R005", "R007", "R008", "R015"],
+        "projects": [{ "id": "R05", "name": "Apicurio Registry" }, { "id": "R02", "name": "Eclipse Cyclone DDS" }],
+        "validation": "验证Schema兼容率、转换正确率、版本回滚和多源数据接入时延。"
+      },
+      "G004": {
+        "short_label": "智能路由",
+        "target_score": 79,
+        "priority": "高",
+        "impact": "决定有限带宽下关键任务数据能否优先、稳定到达。",
+        "cause": "当前路由更多依赖静态规则，缺少结合任务优先级、链路状态和数据价值的动态决策。",
+        "path": "增加任务优先级模型、链路质量感知和动态队列调度，并建立可解释的路由策略记录。",
+        "route_nodes": ["R002", "R004", "R014"],
+        "projects": [{ "id": "R06", "name": "Envoy" }, { "id": "R01", "name": "NATS Server" }],
+        "validation": "验证带宽拥塞下高优先级消息的到达率、排队时延和策略切换稳定性。"
+      },
+      "G005": {
+        "short_label": "边缘协同",
+        "target_score": 85,
+        "priority": "中高",
+        "impact": "影响大规模终端接入、边缘计算负载和边云任务协同。",
+        "cause": "已有边缘运行基础，但终端资源治理、离线任务和规模化可观测性仍不完整。",
+        "path": "补充边缘任务编排、资源约束策略和统一遥测，逐步扩大节点规模与并发负载。",
+        "route_nodes": ["R009", "R010", "R011", "R012"],
+        "projects": [{ "id": "R10", "name": "Ray" }, { "id": "R09", "name": "node_exporter" }],
+        "validation": "验证节点规模增长后的资源占用、任务成功率、遥测完整性和边云同步负载。"
+      },
+      "G006": {
+        "short_label": "开放SDK",
+        "target_score": 81,
+        "priority": "最高",
+        "impact": "决定第三方能力能否低成本接入并持续维护。",
+        "cause": "缺少统一开发者入口、稳定SDK、Schema治理和自动化兼容测试。",
+        "path": "建设API与SDK规范、开发者门户、Schema Registry和端到端示例，形成版本治理机制。",
+        "route_nodes": ["R013", "R014", "R015", "R016"],
+        "projects": [{ "id": "R05", "name": "Apicurio Registry" }, { "id": "R06", "name": "Envoy" }],
+        "validation": "验证新系统接入时间、接口兼容率、升级回归通过率和示例覆盖度。"
+      },
+      "G007": {
+        "short_label": "跨域集成",
+        "target_score": 78,
+        "priority": "最高",
+        "impact": "影响跨军种、跨安全域和联盟级任务系统的协同范围。",
+        "cause": "数据标准、身份边界、联盟接口和跨域审计机制尚未形成完整组合。",
+        "path": "从跨系统数据契约入手，补充身份授权、流程编排和跨域审计，再开展多系统联合验证。",
+        "route_nodes": ["R004", "R007", "R012", "R015"],
+        "projects": [{ "id": "R02", "name": "Eclipse Cyclone DDS" }, { "id": "R06", "name": "Envoy" }, { "id": "R11", "name": "Temporal" }],
+        "validation": "验证跨系统数据一致性、身份授权、流程恢复和审计链完整性。"
+      }
+    }
+  },
   "reports": [
     {
       "report_id": "P001",

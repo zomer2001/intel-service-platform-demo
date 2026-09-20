@@ -8,7 +8,8 @@
     { id: "opensource", label: "开源项目索引矩阵" },
     { id: "parameters", label: "仿真验证参数包" }
   ];
-  var requested = new URLSearchParams(window.location.search).get("tab") || "scenarios";
+  var query = new URLSearchParams(window.location.search);
+  var requested = query.get("tab") || "scenarios";
   var active = tabs.some(function (tab) { return tab.id === requested; }) ? requested : "scenarios";
   var shell = window.renderPlatform({
     projectTitle: "Lattice Mesh 技术还原专项",
@@ -94,4 +95,7 @@
   shell.workspace.appendChild(content);
   tabs.forEach(function (tab) { window.PlatformModules.restorationAnalysis.render(tab.id, "restore-mount-" + tab.id); });
   selectTab(active, false);
+  if (active === "opensource" && query.get("project")) {
+    window.setTimeout(function () { window.PlatformModules.restorationAnalysis.openProjectById(query.get("project")); }, 0);
+  }
 }());

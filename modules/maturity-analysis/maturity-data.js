@@ -221,4 +221,12 @@
       unknown: "关键未知项"
     }
   };
+
+  /*
+   * 成熟度组件按 target id 读取数据集。新增技术时只需按同一结构增加一项，
+   * 路线节点通过 maturityRef / URL 参数引用，不需要修改页面结构。
+   */
+  window.MATURITY_ANALYSIS_DATASETS = {
+    "lattice-mesh": window.MATURITY_ANALYSIS_DATA
+  };
 }());
