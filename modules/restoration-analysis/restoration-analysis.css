@@ -355,6 +355,27 @@
 .rest-os-discovery__update[hidden] { display: none; }
 .rest-os-discovery__update strong { color: #16856c; }
 
+.rest-os-agent-trace {
+  display: grid;
+  gap: 5px;
+  margin: 0 20px 18px;
+  border-top: 1px solid #e1e9ef;
+  padding-top: 12px;
+}
+.rest-os-agent-trace__head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 3px; }
+.rest-os-agent-trace__head strong { color: #2d465d; font-size: 11px; }
+.rest-os-agent-trace__head span { color: #8998a7; font-size: 10px; }
+.rest-os-agent-trace__item { display: grid; grid-template-columns: 28px 1fr; gap: 8px; align-items: start; border-radius: 5px; padding: 7px 8px; color: #7a8998; }
+.rest-os-agent-trace__item > i { display: grid; width: 24px; height: 24px; place-items: center; border-radius: 50%; background: #edf2f6; color: #7890a5; font-size: 9px; font-style: normal; font-weight: 800; }
+.rest-os-agent-trace__item strong,
+.rest-os-agent-trace__item span { display: block; }
+.rest-os-agent-trace__item strong { color: #546b80; font-size: 10px; }
+.rest-os-agent-trace__item span { margin-top: 2px; font-size: 10px; line-height: 1.45; }
+.rest-os-agent-trace__item[data-state="running"] { background: #eef9f5; color: #087863; }
+.rest-os-agent-trace__item[data-state="running"] > i,
+.rest-os-agent-trace__item[data-state="done"] > i { background: #d7f2e9; color: #13866c; }
+.rest-os-agent-trace__item[data-state="done"] strong { color: #247966; }
+
 .rest-os-tree__scroll { overflow-x: auto; padding: 0 20px 8px; }
 .rest-os-tree__stage { width: 1430px; }
 .rest-os-tree__heads {

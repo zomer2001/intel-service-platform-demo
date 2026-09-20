@@ -12,7 +12,6 @@
 
   function formalText(value) {
     return String(value === undefined || value === null ? "—" : value)
-      .replace(/demo-lab/gi, "sample-lab")
       .replace(/DEMO/gi, "样例")
       .replace(/演示数据/g, "样例研判数据")
       .replace(/演示研判/g, "公开资料研判")
@@ -265,7 +264,7 @@
       O13: "约束任务调度组件",
       O14: "任务迁移与恢复原型"
     };
-    var manifest = project.language === "Rust" ? "Cargo.toml" : (project.language === "Go" ? "go.mod" : (project.language === "Python" ? "pyproject.toml" : "build.config"));
+    var manifest = project.manifest || (project.language === "Rust" ? "Cargo.toml" : (project.language === "Go" ? "go.mod" : (project.language === "Python" ? "pyproject.toml" : "build.config")));
     var grade = project.match >= 85 ? "A级重点候选" : (project.match >= 75 ? "B级工程参考" : "C级分析参考");
     var tabs = [
       { id: "overview", label: "项目概览" },
@@ -275,25 +274,26 @@
     ];
     var wrapper = el("div", "rest-repo-drawer");
     var metrics = el("div", "rest-repo-metrics");
-    [["匹配度", project.match, "blue"], ["可信度", project.credibility, "green"], [grade, "", "gray"], ["样例项目", "", "gray"]].forEach(function (item) {
+    [["匹配度（研判）", project.match, "blue"], ["可信度（研判）", project.credibility, "green"], [grade, "", "gray"], ["公开仓库", "", "gray"]].forEach(function (item) {
       var metric = el("span"); metric.dataset.tone = item[2]; metric.appendChild(document.createTextNode(item[0] + (item[1] === "" ? "" : " "))); if (item[1] !== "") metric.appendChild(el("strong", "", item[1])); metrics.appendChild(metric);
     });
     var tablist = el("div", "rest-repo-tabs");
     tablist.setAttribute("role", "tablist");
     var content = el("div", "rest-repo-content");
-    var note = el("p", "rest-repo-note", "项目名称、链接、目录结构和评价结果均为样例研判信息，只用于展示索引与工程分析能力，不代表 Lattice Mesh 的真实内部代码。");
+    var note = el("p", "rest-repo-note", "许可、语言、目录和仓库链接来自公开仓库快照；匹配度、可信度、复用判断和覆盖率是本系统研判，不代表 Lattice Mesh 的真实内部代码。");
 
     function overviewPanel() {
       var fragment = document.createDocumentFragment();
-      var summary = el("section", "rest-repo-summary"); summary.appendChild(el("span", "", "项目摘要")); summary.appendChild(el("p", "", project.name + " 是面向“" + nodeName + "”的样例候选资源。索引智能体依据代码目录、接口说明、测试覆盖和维护状态，将其映射为“" + project.reuse + "”资源；当前评估重点不是项目名称本身，而是其中可独立提取、验证和替换的工程模块。")); fragment.appendChild(summary);
+      var summary = el("section", "rest-repo-summary"); summary.appendChild(el("span", "", "项目摘要")); summary.appendChild(el("p", "", project.name + " 是面向“" + nodeName + "”的公开候选资源。索引智能体依据代码目录、接口说明、测试覆盖和维护状态，将其映射为“" + project.reuse + "”资源；当前评估重点不是项目名称本身，而是其中可独立提取、验证和替换的工程模块。")); fragment.appendChild(summary);
       var overview = el("div", "rest-repo-overview-grid");
-      [["资源类型", resourceTypes[project.node] || "开源工程候选资源"], ["对应技术单元", nodeName], ["工程利用判断", project.reuse], ["开发语言", project.language], ["开源许可", project.license], ["维护 / 测试", project.activity + " / " + project.tests]].forEach(function (item) {
+      [["资源类型", resourceTypes[project.node] || "开源工程候选资源"], ["对应技术单元", nodeName], ["工程利用判断", project.reuse], ["开发语言", project.language], ["开源许可", project.license], ["维护 / 测试", project.activity + " / " + project.tests], ["来源快照", (project.sourceRef || "main") + " · " + (project.snapshotDate || "—")]].forEach(function (item) {
         var card = el("div"); card.appendChild(el("span", "", item[0])); card.appendChild(el("strong", "", item[1])); overview.appendChild(card);
       });
       fragment.appendChild(overview);
+      var fact = el("section", "rest-repo-summary"); fact.appendChild(el("span", "", "公开仓库事实")); fact.appendChild(el("p", "", project.publicFact || project.note)); fragment.appendChild(fact);
       fragment.appendChild(el("span", "rest-repo-section-title", "可提取能力"));
-      var capabilities = el("div", "rest-repo-capabilities"); [nodeName, "接口适配", "状态与异常处理", "最小样例验证"].forEach(function (label) { capabilities.appendChild(badge(label)); }); fragment.appendChild(capabilities);
-      var advice = el("section", "rest-repo-advice"); advice.appendChild(el("span", "", "建议利用方式")); advice.appendChild(el("p", "", "先运行 examples/minimal 完成基线复现，再从核心目录中提取独立机制，通过 adapters 层接入仿真环境。无法由公开实现覆盖的接口语义、任务约束与异常恢复策略继续下钻为自研最小单元。")); var link = el("a", "", "打开样例项目地址"); link.href = project.url; link.target = "_blank"; link.rel = "noreferrer"; advice.appendChild(link); fragment.appendChild(advice);
+      var capabilities = el("div", "rest-repo-capabilities"); (project.capabilities || [nodeName, "接口适配", "状态与异常处理", "最小样例验证"]).forEach(function (label) { capabilities.appendChild(badge(label)); }); fragment.appendChild(capabilities);
+      var advice = el("section", "rest-repo-advice"); advice.appendChild(el("span", "", "建议利用方式")); advice.appendChild(el("p", "", project.extractionAdvice || "先运行最小样例完成基线复现，再从核心目录中提取独立机制，通过适配层接入验证环境。")); var link = el("a", "", "打开公开仓库"); link.href = project.url; link.target = "_blank"; link.rel = "noreferrer"; advice.appendChild(link); fragment.appendChild(advice);
       return fragment;
     }
 
@@ -301,7 +301,7 @@
       var fragment = document.createDocumentFragment();
       var summary = el("section", "rest-repo-summary"); summary.appendChild(el("span", "", "文件扫描结论")); summary.appendChild(el("p", "", "智能体已识别构建入口、核心实现、适配层、最小样例、测试目录和架构文档，并标注其在技术还原中的用途。")); fragment.appendChild(summary);
       var list = el("div", "rest-repo-files");
-      [[manifest, "依赖、构建目标与特性开关；用于判断运行环境和第三方依赖边界。", "构建配置"], ["src/lib.rs", "项目启动或库入口；用于定位初始化流程、公开接口和主要调用链。", "入口参考"], ["src/core/", nodeName + "的核心实现目录；包含关键状态机、数据结构或处理策略。", "原理参考"], ["src/adapters/", "网络、存储或协议适配层；可作为与仿真环境对接的主要改造位置。", "重点适配"], ["examples/minimal/", "最小可运行样例；用于快速复现基本能力并提取默认配置。", "直接验证"], ["tests/integration/", "集成测试与异常场景用例；用于评估断连、恢复和边界条件。", "可信核验"], ["docs/architecture.md", "模块职责、接口约束和部署方式说明；用于辅助代码架构解析。", "文档证据"]].forEach(function (item) {
+      (project.files || [[manifest, "依赖、构建目标与特性开关；用于判断运行环境和第三方依赖边界。", "构建配置"], ["src/core/", nodeName + "的核心实现目录；包含关键状态机、数据结构或处理策略。", "原理参考"], ["examples/", "最小可运行样例；用于快速复现基本能力并提取默认配置。", "直接验证"], ["tests/", "测试目录与异常场景用例；用于评估边界条件。", "可信核验"]]).forEach(function (item) {
         var row = el("div"); row.appendChild(el("code", "", item[0])); row.appendChild(el("p", "", item[1])); row.appendChild(el("span", "", item[2])); list.appendChild(row);
       });
       fragment.appendChild(list); return fragment;
@@ -310,15 +310,17 @@
     function architecturePanel() {
       var fragment = document.createDocumentFragment();
       var block = el("section", "rest-repo-architecture"); block.appendChild(el("span", "rest-repo-section-title", "代码调用与依赖结构"));
-      var flow = el("div", "rest-repo-architecture__flow"); [["接入与接口层", "由 src/lib.rs 暴露初始化、配置和调用接口"], ["核心机制层", "围绕“" + nodeName + "”实现状态管理与关键处理逻辑"], ["适配与运行层", "连接网络、持久化、监测和测试环境"]].forEach(function (item, index) { if (index) flow.appendChild(el("i", "", "→")); var card = el("div"); card.appendChild(el("strong", "", item[0])); card.appendChild(el("span", "", item[1])); flow.appendChild(card); }); block.appendChild(flow);
-      var notes = el("div", "rest-repo-architecture__notes"); [["主要入口", "src/lib.rs 完成配置加载、组件初始化和外部接口注册。"], ["核心调用链", "接口请求 → 核心状态机/处理器 → 网络或存储适配器 → 运行状态回传。"], ["主要依赖", "异步运行时、序列化组件、网络传输与本地持久化依赖需要单独核验。"], ["替换边界", "核心机制与适配层分离，可保留通用逻辑并替换协议、数据模型和运行约束。"]].forEach(function (item) { var card = el("div"); card.appendChild(el("span", "", item[0])); card.appendChild(el("p", "", item[1])); notes.appendChild(card); }); block.appendChild(notes); fragment.appendChild(block); return fragment;
+      var architecture = project.architecture || { flow: [["接入与接口层", "公开接口和配置入口"], ["核心机制层", "围绕“" + nodeName + "”实现核心逻辑"], ["适配与运行层", "连接网络、存储和测试环境"]], notes: [["主要入口", "从构建文件、入口目录和 examples/ 定位启动路径。"], ["核心调用链", "接口请求 → 核心处理器 → 适配器 → 运行状态回传。"], ["主要依赖", "运行时、序列化、网络和存储依赖需要单独核验。"], ["替换边界", "核心机制与适配层分离，可替换协议、数据模型和运行约束。"]] };
+      var flow = el("div", "rest-repo-architecture__flow"); architecture.flow.forEach(function (item, index) { if (index) flow.appendChild(el("i", "", "→")); var card = el("div"); card.appendChild(el("strong", "", item[0])); card.appendChild(el("span", "", item[1])); flow.appendChild(card); }); block.appendChild(flow);
+      var notes = el("div", "rest-repo-architecture__notes"); architecture.notes.forEach(function (item) { var card = el("div"); card.appendChild(el("span", "", item[0])); card.appendChild(el("p", "", item[1])); notes.appendChild(card); }); block.appendChild(notes); fragment.appendChild(block); return fragment;
     }
 
     function mappingPanel() {
       var fragment = document.createDocumentFragment();
-      var list = el("div", "rest-repo-map-list"); [["直接覆盖", nodeName + "的通用处理流程、基本数据结构和最小运行样例。", (node ? node.coverage : project.match) + "%", "green"], ["二次适配", "接口定义、消息格式、资源约束和仿真环境连接方式。", "重点工作", "blue"], ["仅供参考", "异常恢复、分布式一致性和性能优化策略，需要结合场景重新验证。", "原理参考", "gray"], ["继续自研", "Lattice Mesh 专有接口语义、任务规则和内部实现不可由样例项目直接推定。", "明确缺口", "red"]].forEach(function (item) { var row = el("div"); row.dataset.tone = item[3]; row.appendChild(el("strong", "", item[0])); row.appendChild(el("p", "", item[1])); row.appendChild(el("span", "", item[2])); list.appendChild(row); }); fragment.appendChild(list);
-      fragment.appendChild(el("span", "rest-repo-section-title", "可信度构成")); var scores = el("div", "rest-repo-scores"); [["代码可读性", Math.min(96, project.credibility + 5)], ["测试完整性", Math.min(94, project.credibility + 2)], ["维护活跃度", project.credibility], ["技术映射一致性", project.match]].forEach(function (item) { var card = el("div"); card.appendChild(el("span", "", item[0])); card.appendChild(el("strong", "", item[1])); scores.appendChild(card); }); fragment.appendChild(scores);
-      var advice = el("section", "rest-repo-advice"); advice.appendChild(el("span", "", "推荐验证场景")); advice.appendChild(el("p", "", "将项目最小样例接入“弱网多节点数据同步”场景，分别调整链路时延、丢包率和断连时长，观察消息到达率、恢复时间和资源占用，再决定是否进入组合验证。")); fragment.appendChild(advice); return fragment;
+      var fact = el("section", "rest-repo-summary"); fact.appendChild(el("span", "", "公开事实与系统研判分界")); fact.appendChild(el("p", "", "许可、语言、目录和仓库活跃度来自公开仓库快照；下面的覆盖比例、匹配度和复用等级是索引智能体结合目标节点做出的工程研判。")); fragment.appendChild(fact);
+      var list = el("div", "rest-repo-map-list"); [["直接覆盖", nodeName + "的通用处理流程、基本数据结构和最小运行样例。", (node ? node.coverage : project.match) + "%", "green"], ["二次适配", "接口定义、消息格式、资源约束和验证环境连接方式。", "重点工作", "blue"], ["仅供参考", "异常恢复、分布式一致性和性能优化策略，需要结合场景重新验证。", "原理参考", "gray"], ["继续自研", "Lattice Mesh 专有接口语义、任务规则和内部实现不可由公开仓库直接推定。", "明确缺口", "red"]].forEach(function (item) { var row = el("div"); row.dataset.tone = item[3]; row.appendChild(el("strong", "", item[0])); row.appendChild(el("p", "", item[1])); row.appendChild(el("span", "", item[2])); list.appendChild(row); }); fragment.appendChild(list);
+      fragment.appendChild(el("span", "rest-repo-section-title", "系统研判评分构成")); var scores = el("div", "rest-repo-scores"); [["代码可读性", Math.min(96, project.credibility + 5)], ["测试完整性", Math.min(94, project.credibility + 2)], ["维护活跃度", project.credibility], ["技术映射一致性", project.match]].forEach(function (item) { var card = el("div"); card.appendChild(el("span", "", item[0])); card.appendChild(el("strong", "", item[1])); scores.appendChild(card); }); fragment.appendChild(scores);
+      var advice = el("section", "rest-repo-advice"); advice.appendChild(el("span", "", "推荐验证场景")); advice.appendChild(el("p", "", "将项目最小样例接入“弱网多节点数据同步”场景，观察其可复用机制与目标场景之间的接口、数据模型和异常恢复差距。")); fragment.appendChild(advice); return fragment;
     }
 
     function paint(tabId) {
@@ -492,25 +494,34 @@
     var sortMode = "combined";
     var levels = ["目标技术", "关键能力", "功能模块", "实现单元", "开源 / 自研结果"];
     var stepDefinitions = [
-      { label: "拆解智能体", note: "自主识别未覆盖单元" },
-      { label: "发现智能体", note: "自主检索代码与文档" },
-      { label: "核验智能体", note: "检查许可、维护与测试" },
-      { label: "映射智能体", note: "评估复用和适配程度" },
-      { label: "版本智能体", note: "写入索引与变更记录" }
+      { label: "拆解智能体", note: "识别未覆盖单元", trace: "输入：当前 O11 增量状态 · 动作：拆解为状态合并与边缘数据协同 · 输出：检索目标" },
+      { label: "发现智能体", note: "检索代码与文档", trace: "输入：检索目标 · 动作：比对公开仓库描述、目录和语言 · 输出：Eclipse Zenoh 候选" },
+      { label: "核验智能体", note: "检查许可、维护与测试", trace: "输入：候选仓库 · 动作：核对 LICENSE、分支、测试和核心目录 · 输出：事实字段" },
+      { label: "映射智能体", note: "评估复用和适配程度", trace: "输入：事实字段 + O11 技术单元 · 动作：计算匹配与复用判断 · 输出：80 分 / 原理参考" },
+      { label: "版本智能体", note: "写入索引与变更记录", trace: "输入：候选与评分 · 动作：写入索引版本并标记人工复核 · 输出：index_v_2026_m8.3" }
     ];
     var discoveredProject = {
       id: "R12",
       node: "O11",
-      name: "MeshSync-Lite（样例）",
-      url: "https://github.com/demo-lab/meshsync-lite",
+      name: "Eclipse Zenoh",
+      url: "https://github.com/eclipse-zenoh/zenoh",
       language: "Rust",
       license: "Apache-2.0",
       reuse: "原理参考",
-      match: 74,
-      credibility: 68,
-      activity: "待持续观察",
-      tests: "基础测试",
-      note: "新增资源用于说明增量状态合并方向的自主发现、核验、映射与版本更新过程。"
+      match: 80,
+      credibility: 90,
+      activity: "高",
+      tests: "完整",
+      note: "Eclipse Zenoh 公开仓库作为新增候选，支持对数据路由、查询和边缘存储的进一步核验。",
+      manifest: "Cargo.toml",
+      sourceRef: "main",
+      snapshotDate: "2026-09-20",
+      sourceKind: "公开 GitHub 仓库",
+      publicFact: "Eclipse Zenoh 公开 Rust 实现及 examples、plugins 和测试目录，适合进一步核对边缘数据协同能力。",
+      capabilities: ["数据路由", "查询与订阅", "边缘存储", "Rust实现参考"],
+      extractionAdvice: "本轮仅纳入候选索引，下一轮应先核验其协议、存储和安全边界，再决定是否进入组合验证。",
+      files: [["zenoh/", "核心协议、路由和会话实现。", "核心实现"], ["plugins/", "存储、网关和扩展插件。", "扩展参考"], ["examples/", "发布、订阅、查询和存储示例。", "直接验证"], ["tests/", "协议与运行行为测试。", "可信核验"], ["Cargo.toml", "Rust workspace 与依赖入口。", "构建入口"]],
+      architecture: {"flow": [["API与会话层", "应用通过订阅、查询和会话接口接入"], ["路由与协议层", "节点发现、路由、查询和数据分发"], ["插件与存储层", "边缘存储、网关和扩展运行能力"]], "notes": [["公开入口", "zenoh/、plugins/ 和 examples/ 可定位核心与扩展边界。"], ["核心调用链", "数据发布 → 路由 / 查询 → 订阅消费或边缘存储。"], ["适配边界", "本轮仅作新增候选，协议兼容、安全和资源约束需要复核。"], ["后续动作", "进入下一轮许可、版本和最小样例核验。"]]}
     };
 
     function currentProjects() {
@@ -594,7 +605,7 @@
     var discoveryPanel = el("section", "rest-os-panel rest-os-discovery");
     var discoveryActions = el("div", "rest-os-panel__actions");
     var historyButton = button("查看版本时间轴", "secondary", function () { versionDrawer("开源项目索引矩阵版本", data.opensource_versions); });
-    var runButton = button("模拟自主发现", "secondary", runDiscovery);
+    var runButton = button("开始索引更新", "secondary", runDiscovery);
     discoveryActions.appendChild(historyButton);
     discoveryActions.appendChild(runButton);
     var discoverySubtitle = el("span", "", data.meta.opensource_version + " · 本轮由任务调度器自动启动，无需人工下发");
@@ -614,9 +625,28 @@
       stepNodes.push(step);
     });
     discoveryPanel.appendChild(discoveryFlow);
+    var traceBox = el("div", "rest-os-agent-trace");
+    var traceHead = el("div", "rest-os-agent-trace__head");
+    traceHead.appendChild(el("strong", "", "可审计执行记录"));
+    traceHead.appendChild(el("span", "", "展示输入、动作与输出，不展示不可复核的内部思维内容"));
+    traceBox.appendChild(traceHead);
+    var traceNodes = [];
+    stepDefinitions.forEach(function (definition, index) {
+      var trace = el("div", "rest-os-agent-trace__item");
+      trace.dataset.state = "waiting";
+      trace.appendChild(el("i", "", "0" + (index + 1)));
+      var traceCopy = el("div");
+      traceCopy.appendChild(el("strong", "", definition.label));
+      traceCopy.appendChild(el("span", "", definition.trace));
+      trace.appendChild(traceCopy);
+      traceBox.appendChild(trace);
+      traceNodes.push(trace);
+    });
+    discoveryPanel.appendChild(traceBox);
     var discoveryUpdate = el("div", "rest-os-discovery__update");
-    discoveryUpdate.appendChild(el("strong", "", "发现 MeshSync-Lite（样例）"));
-    discoveryUpdate.appendChild(el("span", "", "智能体自主完成发现、核验、映射和版本发布 · 覆盖率 68% → 74%"));
+    discoveryUpdate.hidden = true;
+    discoveryUpdate.appendChild(el("strong", "", "发现 Eclipse Zenoh"));
+    discoveryUpdate.appendChild(el("span", "", "智能体完成发现、核验、映射和版本发布 · 覆盖率 68% → 74% · 新增候选进入待复核"));
     discoveryPanel.appendChild(discoveryUpdate);
     panel.appendChild(discoveryPanel);
 
@@ -801,7 +831,7 @@
         var row = el("tr"); row.tabIndex = 0;
         var name = el("td"); var nameWrap = el("div", "rest-os-repo");
         nameWrap.appendChild(el("i", "", "‹/›"));
-        var nameCopy = el("span"); nameCopy.appendChild(el("strong", "", project.name)); nameCopy.appendChild(el("small", "", "github.com/demo-lab · 样例链接"));
+        var nameCopy = el("span"); nameCopy.appendChild(el("strong", "", project.name)); nameCopy.appendChild(el("small", "", project.url.replace(/^https?:\/\//, "").replace(/\/$/, "") + " · " + (project.sourceRef || "main") + " 快照"));
         nameWrap.appendChild(nameCopy); name.appendChild(nameWrap); row.appendChild(name);
         var node = findNode(project.node); row.appendChild(el("td", "", node ? node.name : project.node));
         var reuse = el("td"); reuse.appendChild(badge(project.reuse)); row.appendChild(reuse);
@@ -830,16 +860,17 @@
     }
 
     function updateRuntimeView() {
-      var completed = state.finished ? 18 : Math.max(0, state.index + 1) * 3;
+      var totalTasks = stepDefinitions.length * 4;
+      var completed = state.finished ? totalTasks : Math.max(0, state.index + 1) * 4;
       coverageStat.value.textContent = state.finished ? "74%" : "68%";
       projectStat.value.textContent = state.finished ? String(data.opensource_projects.length + 1) : String(data.opensource_projects.length);
       selfStat.value.textContent = state.finished ? "6" : "7";
-      completedValue.textContent = Math.min(18, completed) + " / 18";
+      completedValue.textContent = Math.min(totalTasks, completed) + " / " + totalTasks;
       interventionValue.textContent = state.finished ? "1项待核验" : "0项";
       liveTitle.textContent = state.finished ? "无人化智能体本轮任务已完成" : "无人化智能体自主运行中";
       liveNote.textContent = state.finished ? "新项目已映射，索引矩阵与覆盖率已更新" : "样例运行状态 · 定时任务与新线索事件双触发";
       discoverySubtitle.textContent = state.finished ? "index_v_2026_m8.3 · 新项目已映射，覆盖率已更新" : data.meta.opensource_version + " · 本轮由任务调度器自动启动，无需人工下发";
-      runButton.textContent = state.running ? "运行中" : (state.finished ? "重新运行" : "模拟自主发现");
+      runButton.textContent = state.running ? "执行中" : (state.finished ? "重新执行" : "开始索引更新");
       runButton.disabled = state.running;
       stepNodes.forEach(function (step, index) {
         step.dataset.state = state.finished || index < state.index ? "done" : (state.running && index === state.index ? "running" : "waiting");
@@ -847,6 +878,9 @@
       discoveryUpdate.hidden = !state.finished;
       ringValue.textContent = state.finished ? "74%" : "68%";
       ring.style.setProperty("--coverage", state.finished ? "266.4deg" : "244.8deg");
+      traceNodes.forEach(function (trace, index) {
+        trace.dataset.state = state.finished || index < state.index ? "done" : (state.running && index === state.index ? "running" : "waiting");
+      });
       paintResultNodes();
       paintProjects();
     }

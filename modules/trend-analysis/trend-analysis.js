@@ -4,10 +4,11 @@
   var data = window.TrendAnalysisData;
   var components = window.PlatformComponents;
   var monitorFlowStages = [
-    { label: "资料发现", note: "发现 1 条新增官方资料" },
-    { label: "事件识别", note: "识别联合演习验证事件" },
-    { label: "关联融合", note: "关联 Battle Manager 与 Lattice" },
-    { label: "态势更新", note: "联合 C2 应用能力上调" }
+    { label: "资料发现", note: "发现 1 条新增官方资料", trace: "输入：Anduril 公开资料 · 动作：抓取标题、日期和来源主体 · 输出：E014 候选" },
+    { label: "事件识别", note: "识别联合演习验证事件", trace: "输入：正文与元数据 · 动作：抽取对象、事件类型和关联能力 · 输出：联合演习事件" },
+    { label: "证据核验", note: "核对来源与技术事实", trace: "输入：事件候选 · 动作：校验公开 URL、来源等级和既有事件 · 输出：中高可信事件" },
+    { label: "关联融合", note: "关联 Battle Manager 与 Lattice", trace: "输入：事件 + 技术对象 · 动作：关联能力、路线和差距条目 · 输出：联合 C2 证据" },
+    { label: "报告更新", note: "形成 v_2026_m8.2 增量版", trace: "输入：核验后的证据 · 动作：写入版本差异与后续任务 · 输出：增量报告 + 复核任务" }
   ];
   var monitorReportVersions = [
     { version: "v_2026_m1", month: 1, kind: "regular", summary: "年度监测基线生成", diff: "建立年度能力、项目、证据与研判基线。" },
@@ -151,7 +152,8 @@
           { label: "事件日期", value: event.事件日期 },
           { label: "技术对象", value: event.技术对象 },
           { label: "事件类型", value: event.事件类型 },
-          { label: "关联能力", value: event.关联能力 }
+          { label: "关联能力", value: event.关联能力 },
+          { label: "数据属性", value: event.数据属性 }
         ]) },
         { title: "公开资料来源", content: sourceBody },
         { title: "研判边界", content: el("p", "", "公开资料研判，仅支撑本事件所列判断，不构成对未公开技术实现的确认。") }
@@ -282,6 +284,16 @@
       actions.appendChild(downloadLink("下载完整监测报告", "Lattice_动态监测报告_" + report.version + ".md", reportLines, "text/markdown;charset=utf-8"));
     }
     if (event) actions.appendChild(button("查看事件证据与来源", "secondary", function () { openEvent(event); }));
+    var audit = el("div", "intel-audit-list");
+    monitorFlowStages.forEach(function (stage, stageIndex) {
+      var item = el("div", "intel-audit-list__item");
+      item.appendChild(el("i", "", "0" + (stageIndex + 1)));
+      var copy = el("div");
+      copy.appendChild(el("strong", "", stage.label));
+      copy.appendChild(el("span", "", stage.trace));
+      item.appendChild(copy);
+      audit.appendChild(item);
+    });
     components.openDrawer({
       kicker: "监测报告详情 · " + report.version,
       title: report.summary,
@@ -294,6 +306,7 @@
         ]) },
         { title: "相对上一版本的差异", content: el("p", "", report.diff) },
         { title: "执行摘要", content: el("p", "", planned ? "月度任务将在监测窗口结束后归并新增资料、事件与能力变化。" : "围绕技术定位、能力成熟度、应用边界和开放生态完成增量研判，并同步标记受影响成果。") },
+        { title: "可审计执行记录", content: planned ? el("p", "", "计划版本尚未执行，生成后将记录资料发现、事件识别、证据核验、关联融合和报告更新。") : audit },
         { title: "报告操作", content: actions },
         { title: "研判说明", content: el("p", "", "样例研判数据／公开资料研判，仅供分析参考。") }
       ]
@@ -350,10 +363,10 @@
     var timelineHead = el("header", "intel-original-panel__head");
     var timelineHeading = el("div");
     timelineHeading.appendChild(el("h2", "", "Lattice 持续监测与报告版本演化"));
-    timelineHeading.appendChild(el("p", "", "同一时间轴：红色突发事件在上，蓝色报告版本在下；点击报告或差异摘要查看详情"));
+    timelineHeading.appendChild(el("p", "", "同一时间轴串联定时报告、突发事件和差异摘要；点击任一节点查看证据或版本详情"));
     timelineHead.appendChild(timelineHeading);
     var legend = el("div", "intel-original-legend");
-    [["emergency", "突发事件"], ["report", "报告版本"], ["diff", "差异摘要"]].forEach(function (item) {
+    [["emergency", "突发事件"], ["report", "定时报告"], ["diff", "差异摘要"]].forEach(function (item) {
       var key = el("span"); key.appendChild(el("i", "intel-original-legend__" + item[0])); key.appendChild(document.createTextNode(item[1])); legend.appendChild(key);
     });
     timelineHead.appendChild(legend);
@@ -367,7 +380,7 @@
     var axisLabel = el("div", "intel-original-lane-label intel-original-lane-label--axis");
     axisLabel.appendChild(el("strong", "", "双驱动时间轴")); axisLabel.appendChild(el("small", "", "红上 / 蓝下")); laneLabels.appendChild(axisLabel);
     var reportLabel = el("div", "intel-original-lane-label intel-original-lane-label--report");
-    reportLabel.appendChild(el("strong", "", "报告版本")); reportLabel.appendChild(el("small", "", "定期 + 增量")); laneLabels.appendChild(reportLabel);
+    reportLabel.appendChild(el("strong", "", "定时报告")); reportLabel.appendChild(el("small", "", "月度 + 增量")); laneLabels.appendChild(reportLabel);
     var diffLabel = el("div", "intel-original-lane-label intel-original-lane-label--diff");
     diffLabel.appendChild(el("strong", "", "版本差异摘要")); diffLabel.appendChild(el("small", "", "点击查看完整报告")); laneLabels.appendChild(diffLabel);
     timelineShell.appendChild(laneLabels);
@@ -451,7 +464,7 @@
     var flowTimer = null;
     var flowStartTimer = null;
     var flowIndex = -1;
-    var runButton = button("模拟突发事件", "secondary", runFlow);
+    var runButton = button("重放 E014 事件链路", "secondary", runFlow);
     flowHead.appendChild(runButton);
     flowPanel.appendChild(flowHead);
     var flowWrap = el("div", "intel-original-flow");
@@ -468,9 +481,26 @@
       return node;
     });
     flowWrap.appendChild(steps);
+    var traceBox = el("div", "intel-original-flow-trace");
+    var traceHead = el("div", "intel-original-flow-trace__head");
+    traceHead.appendChild(el("strong", "", "可审计执行记录"));
+    traceHead.appendChild(el("span", "", "输入 → 动作 → 输出 · 现场展示用执行轨迹"));
+    traceBox.appendChild(traceHead);
+    var traceNodes = monitorFlowStages.map(function (stage, index) {
+      var trace = el("div", "intel-original-flow-trace__item");
+      trace.dataset.state = "pending";
+      trace.appendChild(el("i", "", "0" + (index + 1)));
+      var copy = el("div");
+      copy.appendChild(el("strong", "", stage.label));
+      copy.appendChild(el("span", "", stage.trace));
+      trace.appendChild(copy);
+      traceBox.appendChild(trace);
+      return trace;
+    });
+    flowWrap.appendChild(traceBox);
     var flowResult = el("div", "intel-original-flow-result");
     flowResult.hidden = true;
-    flowResult.appendChild(el("strong", "", "突发增量报告已生成"));
+    flowResult.appendChild(el("strong", "", "E014 事件链路回放完成"));
     flowResult.appendChild(el("span", "", "v_2026_m8 → v_2026_m8.2"));
     flowWrap.appendChild(flowResult);
     flowWrap.appendChild(el("h3", "intel-original-recent-title", "近期报告版本"));
@@ -493,8 +523,11 @@
       stepNodes.forEach(function (node, index) {
         node.dataset.state = index < flowIndex ? "done" : index === flowIndex ? "running" : "pending";
       });
+      traceNodes.forEach(function (node, index) {
+        node.dataset.state = index < flowIndex ? "done" : index === flowIndex ? "running" : "pending";
+      });
       flowResult.hidden = flowIndex < monitorFlowStages.length;
-      runButton.textContent = flowIndex >= monitorFlowStages.length ? "重新执行" : "分析执行中";
+      runButton.textContent = flowIndex >= monitorFlowStages.length ? "重新回放" : "执行中";
       runButton.disabled = flowIndex >= 0 && flowIndex < monitorFlowStages.length;
     }
 
@@ -507,7 +540,7 @@
         flowIndex += 1;
         paintFlow();
         if (flowIndex >= monitorFlowStages.length) window.clearInterval(flowTimer);
-      }, 600);
+      }, 850);
     }
 
     var judgementGrid = el("div", "intel-grid-2");
