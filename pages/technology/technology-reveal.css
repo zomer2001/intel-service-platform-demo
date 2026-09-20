@@ -1,0 +1,95 @@
+.tech-reveal {
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border: 1px solid #c9d8e8;
+  border-left: 3px solid var(--running);
+  border-radius: var(--radius-card);
+  background: #f8fbfe;
+}
+
+.tech-reveal[hidden] {
+  display: none;
+}
+
+.tech-reveal__head {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+.tech-reveal__pulse {
+  width: 9px;
+  height: 9px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--running);
+  box-shadow: 0 0 0 4px rgba(14, 116, 144, 0.12);
+}
+
+.tech-reveal__events {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 10px;
+}
+
+.tech-reveal__event {
+  padding: 4px 9px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.tech-reveal__event[data-state="running"] {
+  border-color: rgba(14, 116, 144, 0.45);
+  background: rgba(14, 116, 144, 0.08);
+  color: var(--running);
+}
+
+.tech-reveal__event[data-state="completed"] {
+  border-color: rgba(21, 128, 61, 0.3);
+  background: rgba(21, 128, 61, 0.07);
+  color: var(--success);
+}
+
+.tech-reveal__skeleton {
+  display: grid;
+  gap: 6px;
+  margin-top: 11px;
+}
+
+.tech-reveal__skeleton span {
+  height: 7px;
+  border-radius: 999px;
+  background: #e6edf4;
+}
+
+.tech-reveal__skeleton span:nth-child(1) { width: 82%; }
+.tech-reveal__skeleton span:nth-child(2) { width: 66%; }
+.tech-reveal__skeleton span:nth-child(3) { width: 48%; }
+
+.tech-reveal-enter {
+  animation: tech-reveal-enter 280ms ease-out both;
+}
+
+@keyframes tech-reveal-enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tech-reveal-enter {
+    animation: none;
+  }
+}
