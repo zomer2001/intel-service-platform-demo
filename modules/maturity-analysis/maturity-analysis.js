@@ -61,6 +61,21 @@
     return grid;
   }
 
+  function renderRouteFocus(data, focus) {
+    if (!focus || !focus.dimension) return null;
+    var dimension = data.dimensions.find(function (item) { return item.id === focus.dimension; });
+    if (!dimension) return null;
+    var banner = element("section", "ma-route-focus");
+    var mark = element("span", "ma-route-focus__mark", "↳");
+    var copy = element("div");
+    copy.appendChild(element("p", "ma-route-focus__eyebrow", "路线节点已映射到成熟度维度"));
+    copy.appendChild(element("strong", "", (focus.nodeTitle || focus.route || "所选路线节点") + " → " + dimension.name));
+    copy.appendChild(element("p", "", "下方对应技术维度已高亮。其TRL结论由该维度的公开证据综合形成，不是仅凭单个路线节点直接赋值。"));
+    banner.appendChild(mark);
+    banner.appendChild(copy);
+    return banner;
+  }
+
   function ratingLabel(dimension) {
     var label = dimension.trlMin === dimension.trlMax ? "TRL " + dimension.trlMax : "TRL " + dimension.trlMin + "–" + dimension.trlMax;
     return dimension.status === "validating" ? label + "（验证中）" : label;
@@ -106,12 +121,15 @@
     return axis;
   }
 
-  function renderDimension(dimension) {
-    var row = element("div", "ma-dimension");
+  function renderDimension(dimension, focus) {
+    var isFocused = Boolean(focus && focus.dimension === dimension.id);
+    var row = element("div", "ma-dimension" + (isFocused ? " ma-dimension--route-focus" : ""));
+    row.dataset.dimension = dimension.id;
     var name = element("div", "ma-dimension__name");
     var labelLine = element("div", "ma-dimension__label-line");
     labelLine.appendChild(element("strong", "", dimension.name));
     if (dimension.primary) labelLine.appendChild(element("span", "ma-primary-badge", "主评级"));
+    if (isFocused) labelLine.appendChild(element("span", "ma-route-focus-badge", "当前路线节点"));
     name.appendChild(labelLine);
     name.appendChild(element("span", "ma-dimension__note", dimension.note));
     name.appendChild(studyLink(relatedGap[dimension.id] ? "对标相关能力 →" : "查看能力对标维度 →", "gaps", relatedGap[dimension.id]));
@@ -141,7 +159,7 @@
     return item;
   }
 
-  function renderChart(data) {
+  function renderChart(data, focus) {
     var card = element("section", "ma-card ma-chart-card");
     var header = element("header", "ma-section-header");
     var title = element("div");
@@ -157,7 +175,7 @@
     header.appendChild(legend);
     card.appendChild(header);
     card.appendChild(renderAxis());
-    data.dimensions.forEach(function (dimension) { card.appendChild(renderDimension(dimension)); });
+    data.dimensions.forEach(function (dimension) { card.appendChild(renderDimension(dimension, focus)); });
     return card;
   }
 
@@ -528,14 +546,23 @@
     if (!mount) throw new Error("成熟度分析缺少挂载节点：" + containerId);
     var data = window.MATURITY_ANALYSIS_DATA;
     validateData(data);
+    var params = new URLSearchParams(window.location.search);
+    var focus = {
+      dimension: params.get("dimension") || "",
+      route: params.get("route") || params.get("node") || "",
+      nodeTitle: params.get("nodeTitle") || "",
+      from: params.get("from") || ""
+    };
     var root = element("div", "ma-root");
     var disclaimer = element("aside", "ma-disclaimer");
     disclaimer.appendChild(element("span", "ma-disclaimer__mark", "i"));
     disclaimer.appendChild(element("p", "", data.summary.disclaimer));
     root.appendChild(renderContext(data));
+    var routeFocus = renderRouteFocus(data, focus);
+    if (routeFocus) root.appendChild(routeFocus);
     root.appendChild(disclaimer);
     root.appendChild(renderSummary(data));
-    root.appendChild(renderChart(data));
+    root.appendChild(renderChart(data, focus));
     root.appendChild(renderReportSummary(data));
     root.appendChild(renderEvidenceChain(data));
     mount.replaceChildren(root);

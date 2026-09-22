@@ -509,7 +509,25 @@
         "evidence_summary": "专利公开了一种网格节点注册与可信接入机制：主机携带密钥和资产标识完成注册，由注册机构签发证书，随后更新资产数据库，并将编码后的消息发送或发布到网络节点。",
         "evidence_supports": "支持“Lattice Mesh 在早期已形成去中心化节点接入、身份授权、资产登记与消息发布”等架构原理判断。",
         "evidence_boundary": "专利权利要求用于证明架构思想和技术主张的存在，不等同于证明当时已经规模部署，也不能单独证明实际性能或完整产品实现。",
-        "evidence_url": "https://patents.google.com/patent/US10506436B1/en"
+        "evidence_url": "https://patents.google.com/patent/US10506436B1/en",
+        "evidence_materials": [
+          {
+            "type": "发明专利",
+            "title": "US10506436B1 · Lattice mesh",
+            "publisher": "Anduril Industries / USPTO",
+            "date": "优先权 2018-06-11 · 授权 2019-12-10",
+            "supports": "节点注册、证书签发、资产登记以及消息向网络节点发送或发布。",
+            "url": "https://patents.google.com/patent/US10506436B1/en"
+          },
+          {
+            "type": "会议论文",
+            "title": "Resilient Networking Keeps Critical Sensors Connected",
+            "publisher": "AMOS Conference · Anduril / U.S. Space Force",
+            "date": "2023",
+            "supports": "回溯早期方案并记录 Flux/Lattice Mesh 从原理走向多站点演示和任务运行的证据链。",
+            "url": "https://amostech.com/TechnicalPapers/2023/Poster/Pruden.pdf"
+          }
+        ]
       },
       "R021": {
         "evidence_level": "中高",
@@ -521,7 +539,17 @@
         "evidence_summary": "AMOS 公开论文回溯说明，这项韧性网络工作最初在 2019 年 Space Pitch Day 提出，目标是为关键空间监视传感器提供多路径、可快速恢复的数据连接。",
         "evidence_supports": "支持“专利中的 Mesh 原理在 2019 年进入面向空间监视任务的方案化阶段”的判断。",
         "evidence_boundary": "该日期来自后续会议论文的回溯性陈述，能够说明方案提出时间，但不等同于当年完成产品部署或验收。",
-        "evidence_url": "https://amostech.com/TechnicalPapers/2023/Poster/Pruden.pdf"
+        "evidence_url": "https://amostech.com/TechnicalPapers/2023/Poster/Pruden.pdf",
+        "evidence_materials": [
+          {
+            "type": "会议论文",
+            "title": "Resilient Networking Keeps Critical Sensors Connected",
+            "publisher": "AMOS Conference · Anduril / U.S. Space Force",
+            "date": "2023（回溯 2019 方案）",
+            "supports": "论文明确说明韧性网络工作最初在 2019 年 Space Pitch Day 提出。",
+            "url": "https://amostech.com/TechnicalPapers/2023/Poster/Pruden.pdf"
+          }
+        ]
       },
       "R018": {
         "evidence_level": "高",
@@ -922,6 +950,14 @@
         "path": "引入去中心化发现、状态复制和多路径路由，先完成小规模故障切换，再扩展到跨节点一致性验证。",
         "route_nodes": ["R001", "R002", "R004"],
         "projects": [{ "id": "R04", "name": "go-libp2p" }, { "id": "R01", "name": "NATS Server" }],
+        "score_profile": { "benchmark": [95, 92, 94, 88, 90], "current": [72, 68, 65, 64, 72] },
+        "score_basis": [
+          "对标覆盖去中心化发现、状态同步与多路径；当前以基础消息连接为主。",
+          "对标形成Mesh与自适应路由实现；当前缺少统一分布式状态模型。",
+          "对标有多站点和真实断链记录；当前主要是受控演示。",
+          "对标具有师级和edge-to-cloud证据；当前尚未形成同等规模。",
+          "对标由专利、论文和项目材料交叉支撑；当前以内部样例数据为主。"
+        ],
         "validation": "验证节点失联后的路由恢复时间、状态一致性和消息到达率。"
       },
       "G002": {
@@ -933,6 +969,14 @@
         "path": "补充Local-first缓存、断点续传和冲突合并策略，并在多种丢包与时延组合下验证。",
         "route_nodes": ["R001", "R009", "R012"],
         "projects": [{ "id": "R08", "name": "Automerge" }, { "id": "R04", "name": "go-libp2p" }],
+        "score_profile": { "benchmark": [92, 90, 94, 84, 88], "current": [74, 68, 65, 72, 74] },
+        "score_basis": [
+          "对标明确覆盖断连、低带宽和恢复；当前具备基本缓存但闭环不完整。",
+          "对标包含动态选路与多链路机制；当前缺少冲突合并和自动收敛。",
+          "对标存在风暴断链后的真实恢复记录；当前以实验室弱网测试为主。",
+          "对标已进入跨节点部署；当前验证规模和网络组合较少。",
+          "对标有会议论文和官方材料；当前测试记录可追溯性有限。"
+        ],
         "validation": "验证断连期间可用性、恢复同步耗时、冲突合并正确率和重复消息率。"
       },
       "G003": {
@@ -944,6 +988,14 @@
         "path": "建立统一Schema注册中心，形成格式转换、语义映射、兼容性检查和版本发布流程。",
         "route_nodes": ["R005", "R007", "R008", "R015"],
         "projects": [{ "id": "R05", "name": "Apicurio Registry" }, { "id": "R02", "name": "Eclipse Cyclone DDS" }],
+        "score_profile": { "benchmark": [96, 95, 92, 92, 94], "current": [68, 62, 58, 64, 72] },
+        "score_basis": [
+          "对标覆盖转换、归一、共同数据层和Schema治理；当前仅覆盖部分格式转换。",
+          "对标具备数据模型与注册治理能力；当前语义映射和版本兼容机制不足。",
+          "对标在多系统任务环境中验证；当前缺少跨源一致性验证。",
+          "对标进入体系级共同数据层；当前仍以逐接口适配为主。",
+          "对标有官方产品、项目与Schema材料；当前依据主要来自方案和样例。"
+        ],
         "validation": "验证Schema兼容率、转换正确率、版本回滚和多源数据接入时延。"
       },
       "G004": {
@@ -955,6 +1007,14 @@
         "path": "增加任务优先级模型、链路质量感知和动态队列调度，并建立可解释的路由策略记录。",
         "route_nodes": ["R002", "R004", "R014"],
         "projects": [{ "id": "R06", "name": "Envoy" }, { "id": "R01", "name": "NATS Server" }],
+        "score_profile": { "benchmark": [92, 91, 88, 82, 90], "current": [70, 67, 61, 62, 70] },
+        "score_basis": [
+          "对标覆盖链路状态、数据价值和优先分发；当前以静态规则为主。",
+          "对标具有自动选路与策略执行能力；当前缺少动态调度闭环。",
+          "对标有受限带宽环境证据；当前缺少复杂拥塞组合验证。",
+          "对标已用于多节点网络；当前策略规模和队列数量有限。",
+          "对标有论文及官方能力说明；当前策略日志和实验记录不足。"
+        ],
         "validation": "验证带宽拥塞下高优先级消息的到达率、排队时延和策略切换稳定性。"
       },
       "G005": {
@@ -966,6 +1026,14 @@
         "path": "补充边缘任务编排、资源约束策略和统一遥测，逐步扩大节点规模与并发负载。",
         "route_nodes": ["R009", "R010", "R011", "R012"],
         "projects": [{ "id": "R10", "name": "Ray" }, { "id": "R09", "name": "node_exporter" }],
+        "score_profile": { "benchmark": [92, 90, 93, 92, 86], "current": [78, 74, 72, 80, 72] },
+        "score_basis": [
+          "对标覆盖边缘节点、终端和边云协同；当前已有边缘能力但编排不完整。",
+          "对标具备资源治理与数据网格实现；当前统一遥测和离线任务机制不足。",
+          "对标有跨军种和师级演示；当前验证环境相对单一。",
+          "对标公开65+节点和2500+终端；当前规模仍处于中小规模。",
+          "对标规模数字有公开材料支撑；当前依据以演示统计为主。"
+        ],
         "validation": "验证节点规模增长后的资源占用、任务成功率、遥测完整性和边云同步负载。"
       },
       "G006": {
@@ -977,6 +1045,14 @@
         "path": "建设API与SDK规范、开发者门户、Schema Registry和端到端示例，形成版本治理机制。",
         "route_nodes": ["R013", "R014", "R015", "R016"],
         "projects": [{ "id": "R05", "name": "Apicurio Registry" }, { "id": "R06", "name": "Envoy" }],
+        "score_profile": { "benchmark": [92, 89, 82, 84, 92], "current": [64, 60, 52, 60, 72] },
+        "score_basis": [
+          "对标覆盖API、SDK、开发控制台和Schema Registry；当前入口与能力不统一。",
+          "对标形成多语言工具链和版本治理；当前SDK稳定性与兼容测试不足。",
+          "对标存在第三方接入演示；当前端到端接入样例和回归验证较少。",
+          "对标已形成开发者生态基础；当前仍依赖项目制适配。",
+          "对标有官方文档和公开案例；当前维护记录和外部验证有限。"
+        ],
         "validation": "验证新系统接入时间、接口兼容率、升级回归通过率和示例覆盖度。"
       },
       "G007": {
@@ -988,6 +1064,14 @@
         "path": "从跨系统数据契约入手，补充身份授权、流程编排和跨域审计，再开展多系统联合验证。",
         "route_nodes": ["R004", "R007", "R012", "R015"],
         "projects": [{ "id": "R02", "name": "Eclipse Cyclone DDS" }, { "id": "R06", "name": "Envoy" }, { "id": "R11", "name": "Temporal" }],
+        "score_profile": { "benchmark": [92, 90, 90, 88, 90], "current": [66, 62, 56, 58, 72] },
+        "score_basis": [
+          "对标覆盖跨军种、联合防空反导和联盟接口；当前跨域功能组合不完整。",
+          "对标形成数据、身份和流程协同能力；当前跨域审计与授权边界不足。",
+          "对标有联合演习和体系验证；当前缺少多安全域联合验证。",
+          "对标进入跨系统体系集成；当前仍以单域或少量系统联调为主。",
+          "对标由军方和企业材料交叉支撑；当前依据以设计与局部演示为主。"
+        ],
         "validation": "验证跨系统数据一致性、身份授权、流程恢复和审计链完整性。"
       }
     }

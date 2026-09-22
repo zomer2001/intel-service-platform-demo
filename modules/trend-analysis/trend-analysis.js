@@ -990,10 +990,12 @@
         appendNodeSymbol(point, node, route);
         point.appendChild(svgElement("text", "intel-route-point__time", { y: "-18", "text-anchor": "middle", fill: route.color }, node.时间));
         var shortTitle = node.节点名称.length > 22 ? node.节点名称.slice(0, 21) + "…" : node.节点名称;
-        var labelWidth = Math.max(98, Math.min(250, shortTitle.length * 12 + 24));
-        var selectedLabel = svgElement("g", "intel-route-point__label", { transform: "translate(0 -43)" });
-        selectedLabel.appendChild(svgElement("rect", "", { x: -labelWidth / 2, y: -14, width: labelWidth, height: "28", rx: "14", fill: "#fff", stroke: route.color, "stroke-width": "1.5" }));
-        selectedLabel.appendChild(svgElement("text", "", { y: "4", "text-anchor": "middle", fill: "#203b53" }, shortTitle));
+        var labelWidth = Math.max(174, Math.min(264, shortTitle.length * 12 + 28));
+        var labelOffset = Number(node.阶段) >= maxStage ? 52 : -54;
+        var selectedLabel = svgElement("g", "intel-route-point__label", { transform: "translate(0 " + labelOffset + ")" });
+        selectedLabel.appendChild(svgElement("rect", "", { x: -labelWidth / 2, y: "-22", width: labelWidth, height: "44", rx: "8", fill: "#fff", stroke: route.color, "stroke-width": "1.5" }));
+        selectedLabel.appendChild(svgElement("text", "intel-route-point__label-type", { y: "-6", "text-anchor": "middle", fill: route.color }, (node.evidence_type || node.节点状态) + " · " + node.时间));
+        selectedLabel.appendChild(svgElement("text", "intel-route-point__label-title", { y: "12", "text-anchor": "middle", fill: "#203b53" }, shortTitle));
         point.appendChild(selectedLabel);
         point.appendChild(svgElement("title", "", {}, node.节点名称 + "｜" + node.节点说明));
         point.addEventListener("click", function () { stopPlayback(); selectNode(node, point); });
@@ -1067,6 +1069,21 @@
       var linkedEvents = String(node.关联事件 || "").split(";").filter(Boolean).map(findEvent).filter(Boolean);
       var primaryEvent = linkedEvents[0] || null;
       var primarySource = findSourceForEvent(primaryEvent);
+      var materials = (node.evidence_materials || []).slice();
+      if (!materials.length && (node.evidence_url || primaryEvent)) {
+        materials.push({
+          type: node.evidence_type || (primaryEvent ? primaryEvent.事件类型 : "公开材料"),
+          title: node.evidence_label || (primaryEvent ? primaryEvent.事件标题 : node.节点名称 + "公开依据"),
+          publisher: node.evidence_publisher || (primaryEvent ? primaryEvent.来源主体 : "公开资料"),
+          date: node.evidence_date || (primaryEvent ? primaryEvent.事件日期 : node.时间),
+          supports: node.evidence_supports || (primaryEvent ? primaryEvent.技术影响研判 : node.节点说明),
+          url: node.evidence_url || (primaryEvent ? primaryEvent.来源URL : "")
+        });
+      }
+      linkedEvents.slice(1).forEach(function (event) {
+        if (materials.some(function (material) { return material.url && material.url === event.来源URL; })) return;
+        materials.push({ type: event.事件类型, title: event.事件标题, publisher: event.来源主体, date: event.事件日期, supports: event.技术影响研判, url: event.来源URL });
+      });
       return {
         type: node.evidence_type || (primaryEvent ? primaryEvent.事件类型 : node.数据属性),
         title: node.evidence_label || (primaryEvent ? primaryEvent.事件标题 : node.节点名称 + "公开依据"),
@@ -1077,21 +1094,38 @@
         boundary: node.evidence_boundary || "公开材料仅支撑当前节点所列判断；路线位置和代际归类属于分析归纳，不代表对未公开实现细节的确认。",
         level: node.evidence_level || (primarySource ? primarySource.可信等级 : "中高"),
         url: node.evidence_url || (primaryEvent ? primaryEvent.来源URL : ""),
-        events: linkedEvents
+        events: linkedEvents,
+        materials: materials
       };
+    }
+
+    function evidenceMaterialList(evidence, compact) {
+      var list = el("div", "intel-route-materials" + (compact ? " intel-route-materials--compact" : ""));
+      evidence.materials.forEach(function (material, index) {
+        var item = el("article", "intel-route-material");
+        var meta = el("div", "intel-route-material__meta");
+        meta.appendChild(el("span", "", material.type || "公开材料"));
+        meta.appendChild(el("time", "", material.date || "日期未标注"));
+        item.appendChild(meta);
+        item.appendChild(el("strong", "", material.title));
+        item.appendChild(el("small", "", material.publisher || "公开来源"));
+        item.appendChild(el("p", "", material.supports || "用于支撑当前路线节点判断。"));
+        if (!compact && material.url) {
+          var link = contextLink("打开原始材料 " + String(index + 1).padStart(2, "0") + "（需联网）", material.url, "secondary");
+          link.target = "_blank";
+          link.rel = "noopener noreferrer";
+          item.appendChild(link);
+        }
+        list.appendChild(item);
+      });
+      return list;
     }
 
     function openRouteEvidence(node) {
       var evidence = evidenceForNode(node);
-      var actions = el("div", "intel-drawer-actions");
-      if (evidence.url) {
-        var originalLink = contextLink("打开原始来源（需联网）", evidence.url, "secondary");
-        originalLink.target = "_blank";
-        originalLink.rel = "noopener noreferrer";
-        actions.appendChild(originalLink);
-      }
       var sections = [
         { title: "依据摘要", content: el("p", "", evidence.summary) },
+        { title: "相关论文、专利与公开材料", content: evidenceMaterialList(evidence, false) },
         { title: "来源信息", content: definitionList([
           { label: "依据类型", value: evidence.type },
           { label: "材料名称", value: evidence.title },
@@ -1109,7 +1143,6 @@
         });
         sections.push({ title: "关联公开事件", content: eventActions });
       }
-      if (actions.childElementCount) sections.push({ title: "原始材料", content: actions });
       components.openDrawer({
         kicker: "路线节点依据 · " + node.route_id,
         title: evidence.title,
@@ -1149,7 +1182,11 @@
       evidenceCard.appendChild(evidenceHead);
       evidenceCard.appendChild(el("strong", "", nodeEvidence.title));
       evidenceCard.appendChild(el("p", "", nodeEvidence.summary));
-      evidenceCard.appendChild(button("查看依据摘要", "secondary", function () { openRouteEvidence(node); }));
+      if (nodeEvidence.materials.length) {
+        evidenceCard.appendChild(el("span", "intel-route-evidence-card__materials-title", "相关论文 / 专利 / 公开材料（" + nodeEvidence.materials.length + "）"));
+        evidenceCard.appendChild(evidenceMaterialList(nodeEvidence, true));
+      }
+      evidenceCard.appendChild(button("查看完整依据卡", "secondary", function () { openRouteEvidence(node); }));
       detail.appendChild(evidenceCard);
       if (nodeRelations.length) {
         var relationList = el("div", "intel-route-detail__relations");
@@ -1240,6 +1277,19 @@
       G007: ["E009", "E010", "E014"]
     };
     var gaps = data.gap_analysis.map(function (gap) { return Object.assign({}, gap, details[gap.gap_id] || {}); });
+    var scoreCriteria = [
+      { id: "coverage", label: "功能覆盖", weight: 25 },
+      { id: "implementation", label: "技术实现", weight: 25 },
+      { id: "validation", label: "环境验证", weight: 25 },
+      { id: "scale", label: "规模集成", weight: 15 },
+      { id: "evidence", label: "证据可信度", weight: 10 }
+    ];
+    function weightedScore(values) {
+      return scoreCriteria.reduce(function (sum, criterion, index) { return sum + (Number(values[index]) || 0) * criterion.weight / 100; }, 0);
+    }
+    function formulaText(values) {
+      return values.map(function (value, index) { return value + "×" + scoreCriteria[index].weight + "%"; }).join(" + ");
+    }
     var largest = gaps.slice().sort(function (a, b) { return (b.Lattice演示评分 - b.对标对象演示评分) - (a.Lattice演示评分 - a.对标对象演示评分); });
     var highestPriority = gaps.find(function (item) { return item.priority === "最高"; }) || largest[0];
     var highestEvidence = gaps.find(function (item) { return item.证据充分度 === "高"; }) || largest[0];
@@ -1251,6 +1301,7 @@
     ]));
 
     var method = el("details", "intel-gap-method");
+    method.open = true;
     var methodSummary = el("summary", "", "查看 GAP-V1 差距评分方法与可引证材料");
     method.appendChild(methodSummary);
     method.appendChild(el("p", "", "综合得分 = 功能覆盖×25% + 技术实现×25% + 环境验证×25% + 规模集成×15% + 证据可信度×10%。差距值为对标方案得分减当前方案得分，优先级另结合任务重要性与证据充分度判断。"));
@@ -1259,6 +1310,13 @@
       var card = el("article"); card.appendChild(el("strong", "", entry[0] + " · " + entry[1])); card.appendChild(el("p", "", entry[2])); methodGrid.appendChild(card);
     });
     method.appendChild(methodGrid);
+    var scoreScale = el("div", "intel-gap-scale");
+    [["0", "无证据/未实现"], ["25", "概念或人工流程"], ["50", "实验室完成核心功能"], ["75", "代表性环境验证"], ["90", "真实运行或规模部署"], ["100", "多来源完整验证"]].forEach(function (entry) {
+      var item = el("span"); item.appendChild(el("strong", "", entry[0])); item.appendChild(document.createTextNode(entry[1])); scoreScale.appendChild(item);
+    });
+    method.appendChild(el("strong", "intel-gap-method__subtitle", "原始分锚点"));
+    method.appendChild(scoreScale);
+    method.appendChild(el("p", "", "评分流程：逐项映射公开证据和当前方案材料 → 按上述锚点给出0—100原始分 → 乘以权重得到分项贡献 → 求和并四舍五入。证据不足时降低“证据可信度”，不使用印象分补齐。"));
     method.appendChild(el("p", "intel-gap-evidence", "当前页面分值为离线样例基线，用于展示方法；公开材料支撑能力事实和判断依据，不直接给出这些百分制分数。"));
     panel.appendChild(method);
 
@@ -1351,6 +1409,33 @@
         card.appendChild(el("span", "", entry[0])); card.appendChild(el("strong", "", entry[1])); scoreGrid.appendChild(card);
       });
       detail.appendChild(scoreGrid);
+      if (gap.score_profile && gap.score_profile.benchmark && gap.score_profile.current) {
+        var scoreAudit = el("section", "intel-gap-score-audit");
+        scoreAudit.appendChild(el("strong", "intel-gap-score-audit__title", "分项评分与加权贡献"));
+        scoreAudit.appendChild(el("p", "intel-gap-score-audit__intro", "每个格子显示“原始分 → 加权贡献”，点击该维度时即可直接复核总分如何形成。"));
+        var auditTable = el("table", "intel-gap-score-audit__table");
+        auditTable.innerHTML = "<thead><tr><th>评价项</th><th>权重</th><th>对标表现</th><th>当前方案</th><th>评分依据</th></tr></thead>";
+        var auditBody = el("tbody");
+        scoreCriteria.forEach(function (criterion, index) {
+          var row = el("tr");
+          var benchmarkRaw = Number(gap.score_profile.benchmark[index]) || 0;
+          var currentRaw = Number(gap.score_profile.current[index]) || 0;
+          [criterion.label, criterion.weight + "%", benchmarkRaw + " → " + (benchmarkRaw * criterion.weight / 100).toFixed(1), currentRaw + " → " + (currentRaw * criterion.weight / 100).toFixed(1), (gap.score_basis || [])[index] || "依据当前公开材料与演示基线研判。"].forEach(function (value) { row.appendChild(el("td", "", value)); });
+          auditBody.appendChild(row);
+        });
+        auditTable.appendChild(auditBody);
+        var auditViewport = el("div", "intel-gap-score-audit__viewport");
+        auditViewport.appendChild(auditTable);
+        scoreAudit.appendChild(auditViewport);
+        var benchmarkTotal = weightedScore(gap.score_profile.benchmark);
+        var currentTotal = weightedScore(gap.score_profile.current);
+        var formulas = el("div", "intel-gap-score-audit__formulas");
+        formulas.appendChild(el("p", "", "对标：" + formulaText(gap.score_profile.benchmark) + " = " + benchmarkTotal.toFixed(1) + " → " + Math.round(benchmarkTotal) + "分"));
+        formulas.appendChild(el("p", "", "当前：" + formulaText(gap.score_profile.current) + " = " + currentTotal.toFixed(1) + " → " + Math.round(currentTotal) + "分"));
+        formulas.appendChild(el("strong", "", "差距 = " + Math.round(benchmarkTotal) + " − " + Math.round(currentTotal) + " = " + (Math.round(benchmarkTotal) - Math.round(currentTotal)) + "分"));
+        scoreAudit.appendChild(formulas);
+        detail.appendChild(scoreAudit);
+      }
       var analysis = el("div", "intel-gap-analysis");
       [["影响判断", gap.impact || gap.关键依据], ["差距原因", gap.cause || gap.关键依据], ["技术补强路径", gap.path || gap.建议关注方向], ["验证目标", gap.validation || gap.建议关注方向]].forEach(function (entry) {
         var item = el("article"); item.appendChild(el("strong", "", entry[0])); item.appendChild(el("p", "", entry[1])); analysis.appendChild(item);
