@@ -4,11 +4,11 @@
   var data = window.TrendAnalysisData;
   var components = window.PlatformComponents;
   var monitorFlowStages = [
-    { label: "资料发现", note: "发现 1 条新增官方资料", trace: "输入：Anduril 公开资料 · 动作：抓取标题、日期和来源主体 · 输出：E014 候选" },
-    { label: "事件识别", note: "识别联合演习验证事件", trace: "输入：正文与元数据 · 动作：抽取对象、事件类型和关联能力 · 输出：联合演习事件" },
-    { label: "证据核验", note: "核对来源与技术事实", trace: "输入：事件候选 · 动作：校验公开 URL、来源等级和既有事件 · 输出：中高可信事件" },
-    { label: "关联融合", note: "关联 Battle Manager 与 Lattice", trace: "输入：事件 + 技术对象 · 动作：关联能力、路线和差距条目 · 输出：联合 C2 证据" },
-    { label: "报告更新", note: "形成 v_2026_m8.2 增量版", trace: "输入：核验后的证据 · 动作：写入版本差异与后续任务 · 输出：增量报告 + 复核任务" }
+    { label: "资料发现", note: "发现 1 条新增官方资料", tool: "MCP · web/search", material: "Anduril 官方资料索引", write: "event-candidate/E014", duration: "1.8s", trace: "抓取标题、日期、来源主体和正文摘要，形成 E014 候选。" },
+    { label: "事件识别", note: "识别联合演习验证事件", tool: "Skill · event-extraction", material: "E014 正文与元数据", write: "event-entities.json", duration: "2.4s", trace: "抽取对象、事件类型、时间和关联能力，判断为联合演习验证事件。" },
+    { label: "证据核验", note: "核对来源与技术事实", tool: "MCP · source-check", material: "公开 URL + 既有事件库", write: "evidence/E014", duration: "3.1s", trace: "核验来源等级、重复记录和可支持事实，输出中高可信事件。" },
+    { label: "关联融合", note: "关联 Battle Manager 与 Lattice", tool: "Skill · entity-linking", material: "事件 + 对象图谱 + 路线索引", write: "relations/E014", duration: "2.7s", trace: "关联能力、路线和差距条目，形成联合 C2 证据关系。" },
+    { label: "报告更新", note: "形成 v_2026_m8.2 增量版", tool: "MCP · report-writer", material: "核验事件 + 上一版本报告", write: "report/v_2026_m8.2", duration: "1.6s", trace: "写入版本差异、判断摘要和后续复核任务。" }
   ];
   var monitorReportVersions = [
     { version: "v_2026_m1", month: 1, kind: "regular", summary: "年度监测基线生成", diff: "建立年度能力、项目、证据与研判基线。" },
@@ -121,6 +121,23 @@
 
   function button(label, tone, onClick) {
     return components.createButton({ label: label, tone: tone || "secondary", onClick: onClick });
+  }
+
+  function contextLink(label, url, tone) {
+    var link = el("a", "button button--" + (tone || "secondary"), label);
+    link.href = url;
+    return link;
+  }
+
+  function setContextUrl(values) {
+    try {
+      var url = new URL(window.location.href);
+      Object.keys(values).forEach(function (key) {
+        if (values[key] === null || values[key] === "") url.searchParams.delete(key);
+        else url.searchParams.set(key, values[key]);
+      });
+      window.history.replaceState({}, "", url.href);
+    } catch (error) { /* file:// 下仍保留当前交互。 */ }
   }
 
   function downloadLink(label, filename, content, type) {
@@ -325,6 +342,8 @@
     var panel = el("div", "intel-tab-panel intel-monitor-detail");
     var topActions = el("div", "intel-monitor-detail__actions");
     topActions.appendChild(button("返回监测对象列表", "secondary", onBack));
+    topActions.appendChild(contextLink("返回 Lattice 产品档案", "./lineage.html?tab=catalog&object=lattice"));
+    topActions.appendChild(contextLink("进入关键技术路线", "./trends.html?tab=routes&object=lattice&tech=lattice-mesh", "primary"));
     panel.appendChild(topActions);
 
     var banner = el("section", "intel-original-object-banner");
@@ -492,7 +511,7 @@
     var traceBox = el("div", "intel-original-flow-trace");
     var traceHead = el("div", "intel-original-flow-trace__head");
     traceHead.appendChild(el("strong", "", "可审计执行记录"));
-    traceHead.appendChild(el("span", "", "输入 → 动作 → 输出 · 现场展示用执行轨迹"));
+    traceHead.appendChild(el("span", "", "RUN MON-E014-0821 · 离线流程回放 / MCP 映射示意"));
     traceBox.appendChild(traceHead);
     var traceNodes = monitorFlowStages.map(function (stage, index) {
       var trace = el("div", "intel-original-flow-trace__item");
@@ -500,7 +519,10 @@
       trace.appendChild(el("i", "", "0" + (index + 1)));
       var copy = el("div");
       copy.appendChild(el("strong", "", stage.label));
-      copy.appendChild(el("span", "", stage.trace));
+      copy.appendChild(el("span", "", stage.tool + " · " + stage.duration + " · 状态：待执行"));
+      copy.appendChild(el("span", "", "读取：" + stage.material));
+      copy.appendChild(el("span", "", "写入：" + stage.write));
+      copy.appendChild(el("span", "", "判断摘要：" + stage.trace));
       trace.appendChild(copy);
       traceBox.appendChild(trace);
       return trace;
@@ -720,8 +742,10 @@
     mount.replaceChildren(panel);
     }
 
-    if (new URLSearchParams(window.location.search).get("view") === "lattice") showDetail();
+    var monitorQuery = new URLSearchParams(window.location.search);
+    if (monitorQuery.get("view") === "lattice" || monitorQuery.get("object") === "lattice") showDetail();
     else showList();
+    return function () { if (detailCleanup) detailCleanup(); };
   }
 
   function renderTrends(mount) {
@@ -893,7 +917,7 @@
       gridLayer.appendChild(svgElement("line", "intel-route-grid__tick", { x1: tickX, y1: top, x2: tickX, y2: height - bottom }));
       gridLayer.appendChild(svgElement("text", "intel-route-grid__time", { x: tickX, y: height - 26, "text-anchor": "middle" }, formatTime(tickValue)));
     }
-    gridLayer.appendChild(svgElement("text", "intel-route-grid__axis-title", { x: 18, y: 24 }, "技术成熟阶段"));
+    gridLayer.appendChild(svgElement("text", "intel-route-grid__axis-title", { x: 18, y: 24 }, "技术代际 / 架构范式"));
     gridLayer.appendChild(svgElement("text", "intel-route-grid__axis-title", { x: width - right, y: height - 8, "text-anchor": "end" }, "时间"));
 
     var routeGroups = {};
@@ -951,7 +975,10 @@
       try {
         var url = new URL(window.location.href);
         url.searchParams.set("tab", "routes");
-        url.searchParams.set("focus", nodeId);
+        url.searchParams.set("object", "lattice");
+        url.searchParams.set("tech", "lattice-mesh");
+        url.searchParams.set("route", nodeId);
+        url.searchParams.delete("focus");
         window.history.replaceState({}, "", url.href);
       } catch (error) { /* file:// 下仍保留交互。 */ }
     }
@@ -975,6 +1002,9 @@
       params.set("tab", "maturity");
       params.set("target", chartConfig.target_id || "lattice-mesh");
       params.set("dimension", node.maturityDimension || "core-network");
+      params.set("object", "lattice");
+      params.set("tech", "lattice-mesh");
+      params.set("route", node.route_id);
       params.set("node", node.route_id);
       params.set("nodeTitle", node.节点名称);
       params.set("from", "routes");
@@ -1019,6 +1049,10 @@
         var event = findEvent(eventId);
         if (event) links.appendChild(button("查看事件 " + eventId, "secondary", function () { openEvent(event); }));
       });
+      if (node.evidence_label) {
+        if (node.evidence_url) links.appendChild(contextLink("查看" + (node.evidence_type || "节点") + "依据", node.evidence_url));
+        else links.appendChild(el("span", "intel-route-detail__evidence", (node.evidence_type || "证据") + "：" + node.evidence_label));
+      }
       var maturityLink = el("a", "button button--primary", "进入成熟度分析");
       maturityLink.href = maturityUrl(node);
       links.appendChild(maturityLink);
@@ -1067,20 +1101,31 @@
       }, 720);
     }
 
-    var routeSection = section("关键技术路线演化图", "横轴表示时间，纵轴表示成熟阶段；点击节点查看功能、技术、成果及成熟度分析。", workspace, actions);
+    var routeSection = section("关键技术路线演化图", "横轴表示时间，纵轴表示技术代际；点击节点查看功能、技术、成果及成熟度分析。", workspace, actions);
     panel.appendChild(routeSection);
-    var requestedFocus = new URLSearchParams(window.location.search).get("focus");
+    var routeQuery = new URLSearchParams(window.location.search);
+    var requestedFocus = routeQuery.get("route") || routeQuery.get("focus");
     var initialNode = nodes.find(function (node) { return node.route_id === requestedFocus; }) || nodes.find(function (node) { return node.route_id === "R015"; }) || nodes[0];
     var initialControl = pointLayer.querySelector('[data-node="' + initialNode.route_id + '"]');
     var routeTabRequested = (new URLSearchParams(window.location.search).get("tab") || "monitor") === "routes";
     if (initialNode && initialControl) selectNode(initialNode, initialControl, routeTabRequested);
     mount.replaceChildren(panel);
+    return stopPlayback;
   }
 
   function renderGaps(mount) {
     var panel = el("div", "intel-tab-panel");
     var chartConfig = data.gap_chart || {};
     var details = chartConfig.details || {};
+    var gapEvidenceEvents = {
+      G001: ["E003", "E005", "E009"],
+      G002: ["E003", "E005"],
+      G003: ["E003", "E009", "E011"],
+      G004: ["E003", "E008"],
+      G005: ["E005", "E006", "E007"],
+      G006: ["E008", "E011", "E013"],
+      G007: ["E009", "E010", "E014"]
+    };
     var gaps = data.gap_analysis.map(function (gap) { return Object.assign({}, gap, details[gap.gap_id] || {}); });
     var largest = gaps.slice().sort(function (a, b) { return (b.Lattice演示评分 - b.对标对象演示评分) - (a.Lattice演示评分 - a.对标对象演示评分); });
     var highestPriority = gaps.find(function (item) { return item.priority === "最高"; }) || largest[0];
@@ -1091,6 +1136,18 @@
       { label: "最高优先级", value: gaps.filter(function (item) { return item.priority === "最高"; }).length + " 项" },
       { label: "可关联项目", value: Array.from(new Set([].concat.apply([], gaps.map(function (item) { return (item.projects || []).map(function (project) { return project.id; }); })))).length + " 个" }
     ]));
+
+    var method = el("details", "intel-gap-method");
+    var methodSummary = el("summary", "", "查看 GAP-V1 差距评分方法与可引证材料");
+    method.appendChild(methodSummary);
+    method.appendChild(el("p", "", "综合得分 = 功能覆盖×25% + 技术实现×25% + 环境验证×25% + 规模集成×15% + 证据可信度×10%。差距值为对标方案得分减当前方案得分，优先级另结合任务重要性与证据充分度判断。"));
+    var methodGrid = el("div", "intel-gap-method__grid");
+    [["功能覆盖", "25%", "需求条目、接口和能力清单"], ["技术实现", "25%", "架构、算法、代码和公开技术说明"], ["环境验证", "25%", "试验、演示、弱网或任务环境记录"], ["规模集成", "15%", "部署规模、系统集成和项目化证据"], ["证据可信度", "10%", "来源等级、时间、交叉印证和边界"]].forEach(function (entry) {
+      var card = el("article"); card.appendChild(el("strong", "", entry[0] + " · " + entry[1])); card.appendChild(el("p", "", entry[2])); methodGrid.appendChild(card);
+    });
+    method.appendChild(methodGrid);
+    method.appendChild(el("p", "intel-gap-evidence", "当前页面分值为离线样例基线，用于展示方法；公开材料支撑能力事实和判断依据，不直接给出这些百分制分数。"));
+    panel.appendChild(method);
 
     var sectionActions = el("div", "intel-gap-actions");
     var targetToggle = button("显示开源补强目标", "secondary", toggleTarget);
@@ -1166,6 +1223,7 @@
     var gapList = el("div", "intel-gap-list");
     var detail = el("div", "intel-detail-panel");
     function selectGap(gap, control) {
+      setContextUrl({ tab: "gaps", object: "lattice", tech: "lattice-mesh", gap: gap.gap_id });
       gapList.querySelectorAll("button").forEach(function (item) { item.setAttribute("aria-pressed", item === control ? "true" : "false"); });
       gapList.querySelectorAll("button").forEach(function (item) { item.setAttribute("aria-pressed", item.dataset.gap === gap.gap_id ? "true" : "false"); });
       axisGroups.forEach(function (axis) { axis.classList.toggle("is-selected", axis.dataset.gap === gap.gap_id); });
@@ -1185,6 +1243,17 @@
         var item = el("article"); item.appendChild(el("strong", "", entry[0])); item.appendChild(el("p", "", entry[1])); analysis.appendChild(item);
       });
       detail.appendChild(analysis);
+      var evidencePanel = el("div", "intel-gap-source-panel");
+      evidencePanel.appendChild(el("strong", "", "可引证材料"));
+      evidencePanel.appendChild(el("p", "", "材料用于支撑公开能力事实和分析判断，不直接给出百分制样例分数。"));
+      var evidenceActions = el("div", "intel-gap-links");
+      (gapEvidenceEvents[gap.gap_id] || []).forEach(function (eventId) {
+        var event = findEvent(eventId);
+        if (!event) return;
+        evidenceActions.appendChild(button(eventId + " · " + event.事件标题, "secondary", function () { openEvent(event); }));
+      });
+      evidencePanel.appendChild(evidenceActions);
+      detail.appendChild(evidencePanel);
       var links = el("div", "intel-gap-links");
       if ((gap.route_nodes || []).length) {
         var routeGroup = el("div"); routeGroup.appendChild(el("strong", "", "关联路线节点"));
@@ -1192,7 +1261,7 @@
         gap.route_nodes.forEach(function (nodeId) {
           var node = data.route_evolution.find(function (item) { return item.route_id === nodeId; });
           if (!node) return;
-          var link = el("a", "button button--secondary", node.节点名称); link.href = "./trends.html?tab=routes&focus=" + encodeURIComponent(nodeId); routeLinks.appendChild(link);
+          var link = el("a", "button button--secondary", node.节点名称); link.href = "./trends.html?tab=routes&object=lattice&tech=lattice-mesh&route=" + encodeURIComponent(nodeId); routeLinks.appendChild(link);
         });
         routeGroup.appendChild(routeLinks); links.appendChild(routeGroup);
       }
@@ -1200,7 +1269,10 @@
         var projectGroup = el("div"); projectGroup.appendChild(el("strong", "", "可复用开源项目"));
         var projectLinks = el("div");
         gap.projects.forEach(function (project) {
-          var link = el("a", "button button--secondary", project.name); link.href = "./restoration.html?tab=opensource&project=" + encodeURIComponent(project.id); projectLinks.appendChild(link);
+          var routeId = new URLSearchParams(window.location.search).get("route") || "";
+          var link = el("a", "button button--secondary", project.name);
+          link.href = "./restoration.html?tab=opensource&object=lattice&tech=lattice-mesh&gap=" + encodeURIComponent(gap.gap_id) + "&project=" + encodeURIComponent(project.id) + (routeId ? "&route=" + encodeURIComponent(routeId) : "");
+          projectLinks.appendChild(link);
         });
         projectGroup.appendChild(projectLinks); links.appendChild(projectGroup);
       }
@@ -1257,17 +1329,19 @@
       targetToggle.textContent = showTarget ? "隐藏开源补强目标" : "显示开源补强目标";
     }
 
-    selectGap(largest[0], axisGroups[gaps.indexOf(largest[0])]);
+    var requestedGap = new URLSearchParams(window.location.search).get("gap");
+    var initialGap = gaps.find(function (gap) { return gap.gap_id === requestedGap; }) || largest[0];
+    selectGap(initialGap, axisGroups[gaps.indexOf(initialGap)]);
     mount.replaceChildren(panel);
   }
 
   function render(tabId, mountId) {
     var mount = typeof mountId === "string" ? document.getElementById(mountId) : mountId;
     if (!mount) return;
-    if (tabId === "monitor") renderMonitor(mount);
-    else if (tabId === "trends") renderTrends(mount);
-    else if (tabId === "routes") renderRoutes(mount);
-    else renderGaps(mount);
+    if (tabId === "monitor") return renderMonitor(mount);
+    if (tabId === "trends") return renderTrends(mount);
+    if (tabId === "routes") return renderRoutes(mount);
+    return renderGaps(mount);
   }
 
   window.PlatformModules = window.PlatformModules || {};

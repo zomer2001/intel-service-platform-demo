@@ -121,12 +121,12 @@
       { phase: 5, kind: "缺口更新", title: "部署持续性已补强", detail: "核心部署事实获得交叉支撑，内部机制仍保留缺口。" }
     ],
     phases: [
-      { label: "任务 / 信源组织", duration: 3000 },
-      { label: "首轮采集", duration: 4400 },
-      { label: "新线索识别", duration: 3700 },
-      { label: "检索路径扩展", duration: 3700 },
-      { label: "新证据进入", duration: 3000 },
-      { label: "缺口更新 / 停止", duration: 2200 }
+      { label: "任务 / 信源组织", duration: 2550 },
+      { label: "首轮采集", duration: 3740 },
+      { label: "新线索识别", duration: 3145 },
+      { label: "检索路径扩展", duration: 3145 },
+      { label: "新证据进入", duration: 2550 },
+      { label: "缺口更新 / 停止", duration: 1870 }
     ],
     stopConditions: [
       "核心部署事实已有独立来源支撑",

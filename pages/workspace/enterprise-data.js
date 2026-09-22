@@ -69,11 +69,11 @@
     },
     stages: [
       { id: "understanding", label: "任务理解", title: "任务理解与对象识别", duration: 900 },
-      { id: "collection", label: "动态采集", title: "动态信息采集", duration: 1600 },
-      { id: "lineage", label: "产品技术谱系", title: "产品技术谱系梳理", duration: 1600 },
-      { id: "trends", label: "发展态势", title: "技术发展态势分析", duration: 1500 },
-      { id: "candidates", label: "高价值研判", title: "高价值研究对象研判", duration: 1500 },
-      { id: "next-task", label: "专项任务生成", title: "下层专项任务生成", duration: 1400 }
+      { id: "collection", label: "动态采集", title: "动态信息采集", duration: 1300 },
+      { id: "lineage", label: "产品技术谱系", title: "产品技术谱系梳理", duration: 1300 },
+      { id: "trends", label: "发展态势", title: "技术发展态势分析", duration: 1250 },
+      { id: "candidates", label: "高价值研判", title: "高价值研究对象研判", duration: 1250 },
+      { id: "next-task", label: "专项任务生成", title: "下层专项任务生成", duration: 1200 }
     ],
     researchQuestions: [
       "主要产品体系是什么？",

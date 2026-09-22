@@ -1,6 +1,34 @@
 (function () {
   "use strict";
 
+  var layoutScript = document.currentScript;
+  var rootUrl = inferRootUrl();
+
+  function inferRootUrl() {
+    if (layoutScript && layoutScript.src) return new URL("../", layoutScript.src).href;
+    var current = new URL(window.location.href);
+    var pagesAt = current.pathname.lastIndexOf("/pages/");
+    if (pagesAt >= 0) {
+      current.pathname = current.pathname.slice(0, pagesAt + 1);
+      current.search = "";
+      current.hash = "";
+      return current.href;
+    }
+    return new URL("./", current).href;
+  }
+
+  function resolveHref(path) {
+    return new URL(path, rootUrl).href;
+  }
+
+  var portalViews = {
+    "综合工作台": "overview",
+    "项目 / 专题": "projects",
+    "任务中心": "tasks",
+    "知识检索": "search",
+    "成果中心": "results"
+  };
+
   var navigationGroups = [
     { label: "工作区", items: ["综合工作台", "项目 / 专题", "任务中心"] },
     { label: "业务应用", items: ["产品技术谱系构建", "技术发展态势研判", "技术辅助还原与破解"] },
@@ -94,14 +122,14 @@
     topbar.appendChild(object);
     topbar.appendChild(status);
 
-    sidebar.appendChild(createBrand(options.logoPath || "./assets/brand/vernal-institute-logo.png"));
+    sidebar.appendChild(createBrand(options.logoPath || resolveHref("assets/brand/vernal-institute-logo.png")));
     sidebar.appendChild(createNavigation(options.activeNavigation || "综合工作台", function (label) {
-      if (label === "任务中心") {
-        window.location.href = options.enterpriseHref || "./pages/workspace/enterprise.html";
+      if (portalViews[label]) {
+        window.location.href = resolveHref("pages/portal/portal.html?view=" + portalViews[label]);
         return;
       }
       if (label === "产品技术谱系构建") {
-        window.location.href = options.lineageHref || "./pages/applications/lineage.html";
+        window.location.href = options.lineageHref || resolveHref("pages/applications/lineage.html");
         return;
       }
       if (label === "技术发展态势研判") {
@@ -112,7 +140,6 @@
         window.location.href = options.restorationHref || inferApplicationHref("restoration.html");
         return;
       }
-      project.textContent = label;
     }));
 
     body.appendChild(topbar);
@@ -126,12 +153,9 @@
   }
 
   function inferApplicationHref(filename) {
-    var path = String(window.location.pathname || "").replace(/\\/g, "/");
-    if (path.indexOf("/pages/applications/") >= 0) return "./" + filename;
-    if (path.indexOf("/pages/workspace/") >= 0 || path.indexOf("/pages/technology/") >= 0) return "../applications/" + filename;
-    return "./pages/applications/" + filename;
+    return resolveHref("pages/applications/" + filename);
   }
 
-  window.PlatformLayout = { navigationGroups: navigationGroups, renderPlatform: renderPlatform };
+  window.PlatformLayout = { navigationGroups: navigationGroups, renderPlatform: renderPlatform, resolveHref: resolveHref };
   window.renderPlatform = renderPlatform;
 }());

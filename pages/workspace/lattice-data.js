@@ -89,11 +89,11 @@
     },
     stages: [
       { id: "load", label: "专项任务加载", title: "专项任务加载与范围确认", duration: 900 },
-      { id: "collection", label: "平台资料采集", title: "Lattice 平台资料采集", duration: 1200 },
-      { id: "lineage", label: "平台能力谱系", title: "平台能力与技术谱系梳理", duration: 1200 },
-      { id: "evolution", label: "发展演进分析", title: "平台发展演进分析", duration: 1100 },
-      { id: "assessment", label: "关键技术研判", title: "高价值关键技术研判", duration: 1100 },
-      { id: "next-task", label: "还原任务生成", title: "技术还原任务生成", duration: 1000 }
+      { id: "collection", label: "平台资料采集", title: "Lattice 平台资料采集", duration: 950 },
+      { id: "lineage", label: "平台能力谱系", title: "平台能力与技术谱系梳理", duration: 950 },
+      { id: "evolution", label: "发展演进分析", title: "平台发展演进分析", duration: 900 },
+      { id: "assessment", label: "关键技术研判", title: "高价值关键技术研判", duration: 900 },
+      { id: "next-task", label: "还原任务生成", title: "技术还原任务生成", duration: 900 }
     ],
     sourceCategories: [
       "Anduril Lattice 官方产品页",

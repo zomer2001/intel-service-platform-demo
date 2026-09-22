@@ -3,14 +3,125 @@
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="refresh" content="0; url=./pages/workspace/enterprise.html">
-    <title>情报服务平台</title>
+    <title>情报服务平台｜公共框架</title>
+    <link rel="stylesheet" href="./css/variables.css">
+    <link rel="stylesheet" href="./css/layout.css">
+    <link rel="stylesheet" href="./css/components.css">
   </head>
   <body>
-    <p>正在进入情报服务平台……</p>
-    <p><a href="./pages/workspace/enterprise.html">如果页面没有自动打开，请点击这里。</a></p>
+    <div id="app"></div>
+
+    <script src="./js/data.js"></script>
+    <script src="./js/layout.js"></script>
+    <script src="./js/components.js"></script>
+    <script src="./js/evidence.js"></script>
+    <script src="./js/workflow.js"></script>
     <script>
-      window.location.replace("./pages/workspace/enterprise.html");
+      (function () {
+        "use strict";
+
+        var components = window.PlatformComponents;
+        var shell = window.renderPlatform({
+          projectTitle: "情报分析工作台",
+          analysisLevel: "企业级分析",
+          currentObject: "公共框架预览",
+          taskStatus: "框架就绪",
+          activeNavigation: "综合工作台"
+        });
+
+        function header() {
+          var block = components.element("header", "page-header");
+          var titleGroup = components.element("div");
+          var actions = components.element("div", "page-header__actions");
+          titleGroup.appendChild(components.element("h1", "", "情报服务平台公共框架"));
+          titleGroup.appendChild(components.element("p", "page-header__description", "用于确认品牌、导航、通用组件和抽屉交互的统一页面底座。"));
+          actions.appendChild(components.createButton({ label: "查看证据", onClick: function () { window.openEvidence("evidence-lattice-mesh"); } }));
+          actions.appendChild(components.createButton({ label: "查看执行详情", tone: "primary", onClick: function () { window.openWorkflow("collection"); } }));
+          block.appendChild(titleGroup);
+          block.appendChild(actions);
+          return block;
+        }
+
+        function metrics() {
+          var grid = components.element("section", "metric-grid");
+          window.PLATFORM_DATA.metrics.forEach(function (metric) {
+            grid.appendChild(components.createMetricCard(metric));
+          });
+          return grid;
+        }
+
+        function overviewPanel() {
+          var grid = components.element("div", "card-grid");
+          grid.appendChild(components.createCard({
+            eyebrow: "定位",
+            title: "正式科研平台风格",
+            description: "沿用深蓝导航、白色卡片、浅灰工作区和克制的蓝色强调色。"
+          }));
+          grid.appendChild(components.createCard({
+            eyebrow: "运行",
+            title: "双击即可打开",
+            description: "全部资源使用相对路径，无需安装依赖、启动服务或连接网络。"
+          }));
+          grid.appendChild(components.createCard({
+            eyebrow: "边界",
+            title: "仅验证公共框架",
+            description: "本页面不代表正式业务成果，不包含企业、平台或技术任务迁移。"
+          }));
+          return grid;
+        }
+
+        function componentsPanel() {
+          var cardBody = components.element("div", "content-stack");
+          var tags = components.element("div", "tag-row");
+          var buttons = components.element("div", "button-row");
+          tags.appendChild(components.createTag("A 官方确认", "success"));
+          tags.appendChild(components.createTag("B 公开技术线索", "primary"));
+          tags.appendChild(components.createTag("D 工程近似建议", "warning"));
+          buttons.appendChild(components.createButton({ label: "证据详情", onClick: function () { window.openEvidence("evidence-flux"); } }));
+          buttons.appendChild(components.createButton({ label: "证据对齐流程", onClick: function () { window.openWorkflow("alignment"); } }));
+          buttons.appendChild(components.createButton({ label: "价值研判流程", tone: "primary", onClick: function () { window.openWorkflow("value"); } }));
+          cardBody.appendChild(tags);
+          cardBody.appendChild(buttons);
+          return components.createCard({
+            eyebrow: "公共组件",
+            title: "标签与按钮",
+            description: "按钮使用统一尺寸、边框和焦点状态，标签表达证据等级与处理边界。",
+            body: cardBody
+          });
+        }
+
+        function tablePanel() {
+          return components.createTable({
+            caption: "公开对象与证据状态示例",
+            columns: [
+              { key: "object", label: "对象" },
+              { key: "type", label: "类型" },
+              { key: "source", label: "来源" },
+              { key: "grade", label: "等级" },
+              { key: "status", label: "状态" }
+            ],
+            rows: window.PLATFORM_DATA.records
+          });
+        }
+
+        function statePanel() {
+          var grid = components.element("div", "state-grid");
+          grid.appendChild(components.createLoadingState());
+          grid.appendChild(components.createEmptyState());
+          return grid;
+        }
+
+        var content = components.element("div", "content-stack");
+        content.appendChild(header());
+        content.appendChild(metrics());
+        content.appendChild(components.createTabs([
+          { label: "框架概览", render: overviewPanel },
+          { label: "组件样式", render: componentsPanel },
+          { label: "数据表格", render: tablePanel },
+          { label: "状态示例", render: statePanel }
+        ]));
+        shell.workspace.appendChild(content);
+      }());
     </script>
   </body>
 </html>

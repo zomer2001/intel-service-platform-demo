@@ -60,6 +60,7 @@
   }
 
   function statusLabel(status) {
+    if (status === "已核验") return "已核验出处";
     if (status === "较完整" || status === "完整") return "较完整";
     if (status === "一般" || status === "部分") return "部分";
     return "有限";
@@ -262,7 +263,8 @@
   function renderImage(item) {
     var figure = element("figure", "pc-detail__figure");
     if (!item.image || !item.image.path) {
-      figure.appendChild(element("div", "pc-detail__no-image", "暂无公开图片"));
+      figure.appendChild(element("div", "pc-detail__no-image", item.name + "\n" + item.type));
+      figure.appendChild(element("figcaption", "pc-detail__figure-source", "对象标识 · 未采用未经核实的配图"));
       return figure;
     }
     var picture = element("img", "pc-detail__image pc-detail__image--" + item.id);
@@ -362,16 +364,29 @@
 
   function renderRelations(item) {
     var list = element("div", "pc-relations");
-    var relations = item.id === "dive-ld" ? [
-      ["Anduril Industries", "所属企业"],
-      ["Lattice", "相关平台"],
-      ["Dive-XL", "关联产品"],
-      ["海上 / 水下", "所属场景"]
-    ] : (item.relatedObjects.length ? item.relatedObjects.map(function (name) { return [name, "关联对象"]; }) : [["暂无已整理关联对象", "待补充"]]);
-    relations.forEach(function (relationData) {
+    var relations = item.relations || item.relatedObjects.map(function (name) {
+      var target = state.data.products.find(function (record) { return record.name === name; });
+      return { targetId: target && target.id, name: name, type: "相关研究对象", description: "目录关联索引，不据此认定型号继承或直接集成。" };
+    });
+    if (!relations.length) return element("p", "pc-detail__notice", "当前档案未确认可直接建立的对象关系；不据产品同属一家企业推定集成或继承。");
+    relations.forEach(function (record) {
+      var target = state.data.products.find(function (other) { return other.id === record.targetId; });
       var relation = element("div", "pc-relation");
-      relation.appendChild(element("span", "pc-relation__node", relationData[0]));
-      relation.appendChild(element("span", "pc-relation__type", relationData[1]));
+      var control = element(target ? "button" : "span", "pc-relation__node", target ? target.name : (record.name || record.targetId));
+      if (target) {
+        control.type = "button";
+        control.addEventListener("click", function () { openProductDetail(target.id, false, true); });
+      }
+      relation.appendChild(control);
+      relation.appendChild(element("span", "pc-relation__type", record.type || "关联对象"));
+      if (record.description) relation.appendChild(element("p", "pc-source__supports", record.description));
+      var source = state.data.sources.find(function (entry) { return entry.id === record.sourceId; });
+      if (source) {
+        var evidenceLink = element("button", "pc-source__evidence", "关系依据：" + source.title);
+        evidenceLink.type = "button";
+        evidenceLink.addEventListener("click", function () { openLocalEvidence(item, source); });
+        relation.appendChild(evidenceLink);
+      }
       list.appendChild(relation);
     });
     return list;
@@ -398,12 +413,11 @@
       } else {
         actions.appendChild(element("span", "pc-source__local", "本地研究资料"));
       }
-      if (evidence) {
-        var evidenceButton = element("button", "pc-source__evidence", "查看证据");
+      if (evidence || source.summary) {
+        var evidenceButton = element("button", "pc-source__evidence", "查看本地证据");
         evidenceButton.type = "button";
         evidenceButton.addEventListener("click", function () {
-          closeProductDetail(true);
-          if (typeof window.openEvidence === "function") window.openEvidence(evidence.id);
+          openLocalEvidence(item, source, evidence);
         });
         actions.appendChild(evidenceButton);
       }
@@ -412,6 +426,67 @@
       list.appendChild(card);
     });
     return list;
+  }
+
+  function openLocalEvidence(item, source, evidence) {
+    if (!state.drawerBackdrop) return;
+    var drawer = state.drawerBackdrop.querySelector(".pc-drawer");
+    var original = drawer.querySelector(".pc-detail");
+    if (!original) return;
+    var savedScroll = drawer.scrollTop;
+    var trigger = document.activeElement;
+    var view = element("div", "pc-detail pc-local-evidence");
+    var back = element("button", "button button--secondary", "返回 " + item.name + " 档案");
+    back.type = "button";
+    function restore() {
+      view.replaceWith(original);
+      state.evidenceBack = null;
+      drawer.scrollTop = savedScroll;
+      if (trigger && trigger.isConnected) trigger.focus({ preventScroll: true });
+    }
+    back.addEventListener("click", restore);
+    state.evidenceBack = restore;
+    view.appendChild(back);
+    view.appendChild(element("h2", "pc-detail__name", source.title));
+    view.appendChild(element("p", "pc-source__meta", source.publisher + " · " + source.date + " · 本地资料摘要"));
+    view.appendChild(renderSection("来源摘要", element("p", "pc-detail__summary", source.summary || (evidence && evidence.summary) || source.supports)));
+    view.appendChild(renderSection("支持的信息", element("p", "pc-detail__summary", source.supports || (evidence && evidence.supports))));
+    view.appendChild(renderSection("结论边界", element("p", "pc-detail__summary", source.scopeNote || "本地摘要仅支持所列事实。企业第一方披露不等同于独立测试结果，未公开的实现、性能和采用关系不据此推定。")));
+    view.appendChild(element("p", "pc-source__meta", "资料核验日期：" + (source.checkedAt || item.checkedAt || "2026-09-20")));
+    if (source.url) {
+      var link = element("a", "pc-source__link", "打开原始来源（需联网） ↗");
+      link.href = source.url; link.target = "_blank"; link.rel = "noopener noreferrer";
+      view.appendChild(link);
+    }
+    original.replaceWith(view);
+    drawer.scrollTop = 0;
+    back.focus({ preventScroll: true });
+  }
+
+  function renderTimeline(item) {
+    var list = element("div", "pc-timeline");
+    (item.timeline || []).forEach(function (entry) {
+      var row = element("article", "pc-timeline__item");
+      row.appendChild(element("strong", "", entry.date + " · " + entry.title));
+      if (entry.summary) row.appendChild(element("p", "", entry.summary));
+      var source = state.data.sources.find(function (record) { return record.id === entry.sourceId; });
+      if (source) {
+        var button = element("button", "pc-source__evidence", "查看事件依据");
+        button.type = "button";
+        button.addEventListener("click", function () { openLocalEvidence(item, source); });
+        row.appendChild(button);
+      }
+      list.appendChild(row);
+    });
+    return list;
+  }
+
+  function graphTarget(item) {
+    var graph = window.FULL_STACK_GRAPH_DATA;
+    if (!graph) return null;
+    var aliases = { "ghost-x": ["ghost", "ghost-2023-09"], "anvil-m": ["anvil", "anvil-2023-10"], "roadrunner-m": ["roadrunner", "roadrunner-2023-12"] };
+    if (aliases[item.id]) return { objectId: aliases[item.id][0], eventId: aliases[item.id][1] };
+    return graph.objects.some(function (record) { return record.id === item.id; }) ? { objectId: item.id } : null;
   }
 
   function renderDetailHero(item) {
@@ -423,6 +498,27 @@
     if (item.aliases && item.aliases.length) copy.appendChild(element("p", "pc-detail__aliases", item.aliases.join(" / ")));
     copy.appendChild(element("p", "pc-detail__summary", item.summary));
     copy.appendChild(renderFacts(item));
+    var actions = element("div", "pc-detail__actions");
+    var target = graphTarget(item);
+    if (target) {
+      var graphButton = element("button", "button button--primary", "查看时间图谱");
+      graphButton.type = "button";
+      graphButton.addEventListener("click", function () {
+        closeProductDetail(false);
+        document.dispatchEvent(new CustomEvent("lineage:navigate", { detail: { tab: "graph", objectId: target.objectId, eventId: target.eventId, fromProduct: item.id } }));
+      });
+      actions.appendChild(graphButton);
+    }
+    var supportedMonitor = ["lattice", "lattice-c2", "lattice-mesh", "lattice-sdk", "mission-autonomy"].indexOf(item.id) >= 0;
+    if (supportedMonitor) {
+      var monitor = element("a", "button button--secondary", item.id === "lattice" ? "查看前沿技术动态监测" : "查看所属 Lattice 平台监测");
+      var monitorUrl = new URL("./trends.html", window.location.href);
+      monitorUrl.search = "tab=monitor&object=lattice&tech=lattice-mesh&fromProduct=" + encodeURIComponent(item.id);
+      monitor.href = monitorUrl.href;
+      actions.appendChild(monitor);
+    }
+    if (actions.children.length) copy.appendChild(actions);
+    if (!supportedMonitor) copy.appendChild(element("p", "pc-detail__action-note", "本地专项监测当前覆盖 Lattice 平台；此对象仍可查看档案、关系与已收录事件。"));
     hero.appendChild(renderImage(item));
     hero.appendChild(copy);
     return hero;
@@ -435,6 +531,9 @@
     detail.appendChild(renderSection("经来源核验的公开参数", renderParameters(item)));
     detail.appendChild(renderSection("典型应用", renderApplications(item)));
     detail.appendChild(renderSection("关联对象", renderRelations(item)));
+    if (item.timeline && item.timeline.length) detail.appendChild(renderSection("公开事件", renderTimeline(item)));
+    else if (item.timelineNote) detail.appendChild(renderSection("公开事件", element("p", "pc-detail__summary", item.timelineNote)));
+    if (item.scopeNote) detail.appendChild(renderSection("资料边界", element("p", "pc-detail__summary", item.scopeNote)));
     detail.appendChild(renderSection("信息来源与证据", renderSources(item)));
     return detail;
   }
@@ -442,28 +541,38 @@
   function renderSimpleDetail(item) {
     var detail = element("div", "pc-detail");
     detail.appendChild(renderDetailHero(item));
-    detail.appendChild(renderSection("核心能力", renderList(item.capabilities.length ? item.capabilities : ["当前公开资料尚未形成完整能力清单。"])));
+    detail.appendChild(renderSection("核心能力", item.functions && item.functions.length ? renderFunctions(item) : renderList(item.capabilities.length ? item.capabilities : ["当前公开资料尚未形成完整能力清单。"])));
     detail.appendChild(renderSection("任务与应用", renderList(item.applications.length ? item.applications : ["当前公开资料尚未形成可核验的典型任务清单。"])));
     detail.appendChild(renderSection("公开技术参数", renderParameters(item)));
     detail.appendChild(renderSection("关联对象", renderRelations(item)));
+    if (item.timeline && item.timeline.length) detail.appendChild(renderSection("公开事件", renderTimeline(item)));
+    else if (item.timelineNote) detail.appendChild(renderSection("公开事件", element("p", "pc-detail__summary", item.timelineNote)));
+    if (item.scopeNote) detail.appendChild(renderSection("资料边界", element("p", "pc-detail__summary", item.scopeNote)));
     detail.appendChild(renderSection("信息来源与证据", renderSources(item)));
     return detail;
   }
 
   function closeProductDetail(updateUrl) {
     if (!state || !state.drawerBackdrop) return;
+    if (state.evidenceBack) state.evidenceBack();
+    if (state.currentId) state.detailScrolls[state.currentId] = state.drawerBackdrop.querySelector(".pc-drawer").scrollTop;
     state.drawerBackdrop.remove();
     state.drawerBackdrop = null;
+    state.evidenceBack = null;
     document.body.classList.remove("has-drawer");
     document.removeEventListener("keydown", state.drawerKeyHandler);
     if (updateUrl !== false) setProductUrl(null);
-    if (state.returnFocus && state.returnFocus.isConnected) state.returnFocus.focus();
+    if (updateUrl !== false && state.returnFocus && state.returnFocus.isConnected) state.returnFocus.focus({ preventScroll: true });
   }
 
-  function openProductDetail(productId, skipUrlUpdate) {
+  function openProductDetail(productId, skipUrlUpdate, related) {
     var item = state.data.products.find(function (record) { return record.id === productId; });
     if (!item) { setProductUrl(null); return; }
+    if (related === true && state.currentId) state.objectHistory.push(state.currentId);
+    else state.objectHistory = Array.isArray(related) ? related : [];
     closeProductDetail(false);
+    state.currentId = item.id;
+    document.dispatchEvent(new CustomEvent("lineage:object", { detail: { id: item.id, name: item.name } }));
     var host = document.getElementById("overlay-host");
     if (!host) return;
     var backdrop = element("div", "pc-drawer-backdrop");
@@ -477,22 +586,43 @@
     closeButton.setAttribute("aria-label", "关闭技术产品详情");
     closeButton.addEventListener("click", function () { closeProductDetail(true); });
     header.appendChild(heading);
+    if (state.objectHistory.length) {
+      var previous = element("button", "pc-source__evidence", "返回上一对象");
+      previous.type = "button";
+      previous.addEventListener("click", function () {
+        var history = state.objectHistory.slice();
+        var previousId = history.pop();
+        openProductDetail(previousId, false, history);
+      });
+      header.appendChild(previous);
+    }
     header.appendChild(closeButton);
     drawer.setAttribute("role", "dialog");
     drawer.setAttribute("aria-modal", "true");
     drawer.setAttribute("aria-label", item.name + " 详情");
     drawer.appendChild(header);
-    drawer.appendChild(item.id === "dive-ld" ? renderDiveDetail(item) : renderSimpleDetail(item));
+    drawer.appendChild(item.applicationGroups && item.functions ? renderDiveDetail(item) : renderSimpleDetail(item));
     backdrop.appendChild(drawer);
     backdrop.addEventListener("click", function (event) { if (event.target === backdrop) closeProductDetail(true); });
-    state.returnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    state.drawerKeyHandler = function (event) { if (event.key === "Escape") closeProductDetail(true); };
+    if (!related) state.returnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    state.drawerKeyHandler = function (event) {
+      if (event.key === "Escape") {
+        if (state.evidenceBack) state.evidenceBack(); else closeProductDetail(true);
+      }
+      if (event.key === "Tab") {
+        var controls = Array.from(drawer.querySelectorAll("button:not([disabled]),a[href]"));
+        var first = controls[0], last = controls[controls.length - 1];
+        if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+        else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+      }
+    };
     document.addEventListener("keydown", state.drawerKeyHandler);
     host.replaceChildren(backdrop);
     state.drawerBackdrop = backdrop;
     document.body.classList.add("has-drawer");
     if (!skipUrlUpdate) setProductUrl(item.id);
-    closeButton.focus();
+    closeButton.focus({ preventScroll: true });
+    drawer.scrollTop = state.detailScrolls[item.id] || 0;
   }
 
   function render(containerId, options) {
@@ -517,6 +647,8 @@
       drawerKeyHandler: null,
       returnFocus: null
     };
+    state.detailScrolls = {};
+    state.objectHistory = [];
     root.appendChild(renderContext());
     root.appendChild(renderToolbar());
     root.appendChild(resultsHost);
@@ -533,5 +665,5 @@
   }
 
   window.PlatformModules = window.PlatformModules || {};
-  window.PlatformModules.productCatalog = { render: render, destroy: destroy };
+  window.PlatformModules.productCatalog = { render: render, destroy: destroy, openDetail: openProductDetail, closeDetail: closeProductDetail };
 }());

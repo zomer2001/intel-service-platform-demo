@@ -673,6 +673,17 @@
   gap: 8px;
 }
 
+.pc-detail__actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; }
+.pc-detail__actions a { display:inline-flex; align-items:center; text-decoration:none; font-size:14px; }
+.pc-detail__action-note { margin:12px 0 0; font-size:12px; line-height:1.6; color:var(--text-secondary); }
+.lineage-links { display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin:0 0 12px; padding:12px 14px; background:#edf4fb; border:1px solid #d5e3f0; border-radius:var(--radius-card); }
+.lineage-links p { flex:1 1 260px; margin:0; color:#48647d; font-size:13px; line-height:1.6; }
+.lineage-links a { text-decoration:none; font-size:13px; }
+.lineage-ontology { display:grid; gap:12px; }
+.lineage-ontology__list { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:10px; }
+.lineage-ontology__item { display:grid; gap:8px; border:1px solid var(--border); background:#fbfcfe; border-radius:var(--radius-card); padding:16px; }
+.lineage-ontology__item p { margin:0; line-height:1.6; color:var(--text-secondary); font-size:13px; }
+
 .pc-relation {
   display: flex;
   align-items: center;
@@ -811,3 +822,17 @@
     transition: none;
   }
 }
+
+.lineage-task-note { margin: 10px 0 0; color: #62758a; font-size: 13px; line-height: 1.65; }
+.pc-detail__no-image { white-space: pre-line; text-align: center; line-height: 1.9; }
+.pc-relation { flex-wrap: wrap; align-items: center; }
+button.pc-relation__node { border: 1px solid #b4cbe1; border-radius: 4px; padding: 6px 10px; background: #edf4fa; color: #174e81; cursor: pointer; font: inherit; font-weight: 700; }
+.pc-relation > p, .pc-relation > .pc-source__evidence { flex-basis: 100%; white-space: normal; text-align: left; }
+.pc-source__evidence { cursor: pointer; }
+.pc-local-evidence { display: grid; gap: 18px; }
+.pc-local-evidence > button { justify-self: start; }
+.pc-local-evidence .pc-detail__summary { font-size: 16px; line-height: 1.85; }
+.pc-timeline { display: grid; gap: 12px; }
+.pc-timeline__item { border-left: 3px solid #b4cbe1; padding: 6px 14px; background: #f6f9fc; font-size: 14px; line-height: 1.7; }
+.pc-timeline__item p { margin: 6px 0; }
+.pc-drawer__header .pc-source__evidence { white-space: nowrap; }

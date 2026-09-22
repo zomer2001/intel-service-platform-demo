@@ -58,24 +58,17 @@
     if (!data || !Array.isArray(data.objects) || !Array.isArray(data.relations)) {
       throw new Error("可视化技术/事件图谱数据未加载");
     }
-    if (data.objects.length !== 15 || eventCount(data) !== 51) {
-      throw new Error("可视化技术/事件图谱数据计数异常：应为 15 个对象、51 个里程碑");
-    }
     var ids = {};
-    var featured = 0;
     data.objects.forEach(function (item) {
       item.events.forEach(function (event) {
         if (ids[event.id]) throw new Error("里程碑 ID 重复：" + event.id);
         ids[event.id] = true;
-        if (event.featured) featured += 1;
+        if (!event.summary || !event.source) throw new Error("里程碑缺少本地资料：" + event.id);
       });
     });
     data.relations.forEach(function (relation) {
       if (!ids[relation.from] || !ids[relation.to]) throw new Error("关系线端点不存在：" + relation.label);
     });
-    if (featured !== 3 || !ids["lattice-c2-2024-06"] || !ids["lattice-mesh-2024-12"] || !ids["lattice-mesh-2025-05"]) {
-      throw new Error("重点互动节点配置异常");
-    }
   }
 
   function parseDate(date) {
@@ -132,8 +125,8 @@
       context.appendChild(block);
     });
     var metrics = element("div", "fsg-context__metrics");
-    metrics.appendChild(element("span", "fsg-count", "15 个对象"));
-    metrics.appendChild(element("span", "fsg-count", "51 个里程碑"));
+    metrics.appendChild(element("span", "fsg-count", data.objects.length + " 个对象"));
+    metrics.appendChild(element("span", "fsg-count", eventCount(data) + " 个里程碑"));
     context.appendChild(metrics);
     return context;
   }
@@ -219,7 +212,8 @@
         x: x, y: 0, width: width, height: 38,
         class: "fsg-svg-stage fsg-svg-stage--" + (index % 2 ? "even" : "odd")
       }));
-      svg.appendChild(svgElement("text", { x: x + 16, y: 24, class: "fsg-svg-stage-label" }, stage.label));
+      var stageLabel = GRAPH_WIDTH < 1200 ? ["平台底座形成", "战术平台扩展", "任务化深化", "生态外延"][index] : stage.label;
+      svg.appendChild(svgElement("text", { x: x + 8, y: 24, class: "fsg-svg-stage-label" }, stageLabel));
     });
 
     for (var year = 2018; year <= 2026; year += 1) {
@@ -295,6 +289,7 @@
       var nodeX = nodeRight - nodeWidth;
       var nodeY = rowY[item.id] - nodeHeight / 2;
       var group = svgElement("g", { class: "fsg-object-node", "data-object-id": item.id });
+      makeInteractive(group, "查看 " + item.name + " 对象", function () { openObject(item, group); });
       svg.appendChild(svgElement("line", {
         x1: nodeRight,
         y1: rowY[item.id],
@@ -325,7 +320,8 @@
     var event = position.event;
     var group = svgElement("g", { class: "fsg-event" });
     group.setAttribute("data-event-id", event.id);
-    group.setAttribute("data-has-detail", event.featured ? "true" : "false");
+    group.setAttribute("data-has-detail", event.summary ? "true" : "false");
+    group.setAttribute("data-object-id", position.object.id);
     group.setAttribute("role", "button");
     group.setAttribute("tabindex", "0");
     group.setAttribute("focusable", "true");
@@ -352,16 +348,17 @@
   }
 
   function renderExternalStrip(svg, data) {
-    var y = layerGeometry.external.y + 19;
-    var x = 52;
-    data.externalSystems.forEach(function (label) {
-      var width = Math.max(104, label.length * 15 + 34);
+    var columns = GRAPH_WIDTH < 1200 ? 5 : 10;
+    var cellWidth = (GRAPH_WIDTH - 24) / columns;
+    data.externalSystems.forEach(function (label, index) {
+      var x = 12 + (index % columns) * cellWidth;
+      var y = layerGeometry.external.y + 7 + Math.floor(index / columns) * 33;
+      var width = cellWidth - 8;
       var group = svgElement("g", { class: "fsg-external-item" });
-      group.appendChild(svgElement("rect", { x: x, y: y, width: width, height: 38, rx: 4 }));
-      group.appendChild(svgElement("circle", { cx: x + 15, cy: y + 19, r: 3 }));
-      group.appendChild(svgElement("text", { x: x + 27, y: y + 24 }, label));
+      makeInteractive(group, "查看 " + label + " 概念", function () { openExternal(label, group); });
+      group.appendChild(svgElement("rect", { x: x, y: y, width: width, height: 29, rx: 4 }));
+      group.appendChild(svgElement("text", { x: x + width / 2, y: y + 19, "text-anchor": "middle" }, label));
       svg.appendChild(group);
-      x += width + 12;
     });
   }
 
@@ -371,6 +368,7 @@
       viewBox: "0 0 " + GRAPH_WIDTH + " " + GRAPH_HEIGHT,
       width: GRAPH_WIDTH,
       height: GRAPH_HEIGHT,
+      preserveAspectRatio: "none",
       role: "group",
       "aria-label": "Anduril Industries 2018 至 2026 可视化技术/事件图谱"
     });
@@ -395,10 +393,75 @@
     return row;
   }
 
+  function makeInteractive(node, label, action) {
+    node.setAttribute("role", "button"); node.setAttribute("tabindex", "0");
+    node.setAttribute("aria-label", label);
+    node.addEventListener("click", action);
+    node.addEventListener("keydown", function (event) {
+      if (event.key === "Enter" || event.key === " ") { event.preventDefault(); action(); }
+    });
+  }
+
+  function paragraphSection(title, text) {
+    var section = element("section", "fsg-drawer__section");
+    section.appendChild(element("h3", "", title));
+    section.appendChild(element("p", "", text));
+    return section;
+  }
+
+  function actionButton(label, action) {
+    var button = element("button", "fsg-drawer__source-link", label);
+    button.type = "button"; button.addEventListener("click", action); return button;
+  }
+
+  function catalogueObject(id) {
+    return window.PRODUCT_CATALOG_DATA.products.find(function (item) { return item.id === id; });
+  }
+
+  function openObject(item, trigger) {
+    var product = catalogueObject(item.id);
+    var source = product && window.PRODUCT_CATALOG_DATA.sources.find(function (record) {
+      return product.sourceIds.indexOf(record.id) >= 0 && record.url;
+    });
+    openDrawer({ object: item, kind: "object", event: {
+      title: item.name + " 对象档案", date: "对象概览", eventType: product ? product.type : "图谱对象",
+      summary: product ? product.summary : item.name + " 的公开事件索引。",
+      assessment: product && product.scopeNote, source: source
+    } }, trigger);
+  }
+
+  var externalNotes = {
+    "战术电台": ["通信承载", "用于在现场节点之间传送语音或数据的无线电设备类别。具体波形、频段和加密能力取决于型号。", "图中仅表示潜在承载类别，不确认任何特定电台已接入 Lattice。"],
+    SATCOM: ["卫星通信", "通过卫星链路提供连接的通信方式，可作为地面网络之外的承载选项。", "覆盖、容量、时延与终端条件相关，不能由该标签推断目标系统的链路性能。"],
+    MANET: ["移动自组织网络", "由移动节点协同形成、拓扑可能变化的网络类型。它是通信组织方式，不是某个厂商产品。", "自组织网络与应用层数据 Mesh 不是同一概念，不据同名认定技术实现相同。"],
+    "5G": ["蜂窝网络承载", "第五代移动通信体系，可为移动终端提供数据连接。部署形态、覆盖和业务能力需按实际网络核验。", "图谱没有说明 Anduril 使用了哪种专网、公网或具体5G设备。"],
+    "Wi-Fi": ["无线局域网", "常见的本地无线接入方式，主要用于一定覆盖范围内的设备连接。", "表示承载类别，不代表公开确认了特定协议版本或安全配置。"],
+    "以太网": ["有线局域网", "通过有线接口连接设备、计算节点和网络设施的一类数据链路技术。", "不能据此推定接口速率、拓扑或设备兼容性。"],
+    "传感器": ["数据来源类别", "把环境或对象观测转为数据的设备总称，例如成像、雷达或环境测量设备。", "传感器输出通常还需要接口适配、时间与语义处理，不能认为任意传感器自动兼容。"],
+    "无人平台": ["任务载体类别", "包括无人航空器、地面平台和水下航行器等不同载体，承载软件、传感器或任务载荷。", "图中是跨类概念，不是具体平台的能力或集成清单。"],
+    "武器装备": ["外部任务系统类别", "图谱中表示可能与指挥控制体系发生信息关联的装备类别，仅用于整理公开的系统边界。", "不包含控制接口、操作方法或目标系统实际接入关系的确认。"],
+    "第三方任务系统": ["外部软件系统", "由其他开发主体提供的业务应用或任务系统，公开接口是研究互操作性的入口之一。", "开放接口不代表所有第三方系统已完成集成；实际采用关系需要单独证据。"]
+  };
+
+  function openExternal(label, trigger) {
+    var entry = externalNotes[label];
+    openDrawer({ object: { name: label }, kind: "concept", event: {
+      title: label + " 概念说明", date: "通用概念", eventType: entry[0], summary: entry[1], assessment: entry[2],
+      source: { title: "图谱术语与表达边界说明", publisher: "本项目分析整理", type: "概念释义（非集成证据）", publishedAt: "2026-09-20", summary: entry[1], supports: "仅解释图中标签含义，不证明产品采用关系。" }
+    } }, trigger);
+  }
+
   function openDrawer(position, trigger) {
     if (!state) return;
     closeDrawer(false);
     var event = position.event;
+    if (position.object.id) document.dispatchEvent(new CustomEvent("lineage:object", { detail: { id: position.object.id, name: position.object.name } }));
+    try {
+      var drawerUrl = new URL(window.location.href);
+      if (position.object.id) drawerUrl.searchParams.set("graphObject", position.object.id);
+      if (event.id) drawerUrl.searchParams.set("event", event.id); else drawerUrl.searchParams.delete("event");
+      window.history.replaceState({}, "", drawerUrl.href);
+    } catch (error) { /* URL 持久化不可用时仍支持本地浏览。 */ }
     var source = event.source;
     var host = document.getElementById("overlay-host");
     if (!host) return;
@@ -418,11 +481,11 @@
     header.appendChild(heading);
     header.appendChild(closeButton);
 
-    facts.appendChild(detailRow("日期", event.date));
+    facts.appendChild(detailRow(position.kind ? "查看范围" : "时间定位", event.date));
     facts.appendChild(detailRow("关联对象", position.object.name));
-    facts.appendChild(detailRow(event.featured ? "事件类型" : "详情状态", event.featured ? event.eventType : "待补充"));
+    facts.appendChild(detailRow("记录类型", event.eventType || "公开事件"));
     body.appendChild(facts);
-    if (event.featured) {
+    if (event.summary) {
       var summary = element("section", "fsg-drawer__section");
       var sourceSection = element("section", "fsg-drawer__section fsg-drawer__section--source");
       var sourceLink = element("a", "fsg-drawer__source-link", "打开原始来源 ↗");
@@ -447,23 +510,63 @@
         assessment.appendChild(element("p", "", event.assessment));
         body.appendChild(assessment);
       }
-      sourceSection.appendChild(element("h3", "", "真实来源"));
+      if (event.scopeNote) body.appendChild(paragraphSection("核验说明", event.scopeNote));
+      if (event.verificationStatus) body.appendChild(paragraphSection("资料状态", event.verificationStatus));
+      source = source || { title: "对象目录中的公开资料", publisher: "项目整理", type: "对象概要", publishedAt: "见对象档案" };
+      sourceSection.appendChild(element("h3", "", "本地来源摘要"));
       sourceSection.appendChild(element("p", "fsg-drawer__source-title", source.title));
       var sourceMeta = element("dl", "fsg-drawer__source-meta");
       sourceMeta.appendChild(detailRow("发布主体", source.publisher));
-      sourceMeta.appendChild(detailRow("来源类型", source.type));
-      sourceMeta.appendChild(detailRow("发布日期", source.publishedAt));
-      sourceLink.href = source.url;
+      sourceMeta.appendChild(detailRow("来源类型", source.type || source.sourceType || "公开来源"));
+      sourceMeta.appendChild(detailRow("发布日期", source.publishedAt || source.date || "未标注发布日期"));
+      sourceMeta.appendChild(detailRow("核验日期", source.checkedAt || "2026-09-20"));
+      sourceLink.textContent = "打开原始来源（需联网） ↗";
+      sourceLink.href = source.url || "#";
       sourceLink.target = "_blank";
       sourceLink.rel = "noopener noreferrer";
       sourceSection.appendChild(sourceMeta);
-      sourceSection.appendChild(sourceLink);
+      sourceSection.appendChild(element("p", "", source.summary || source.supports || event.summary));
+      if (source.supports) sourceSection.appendChild(element("p", "", "支持信息：" + source.supports));
+      if (source.url) sourceSection.appendChild(sourceLink);
       body.appendChild(sourceSection);
-    } else {
-      var empty = element("section", "fsg-drawer__empty");
-      empty.appendChild(element("strong", "", "详细内容尚未接入"));
-      empty.appendChild(element("p", "", "该里程碑已纳入可视化技术/事件图谱，详细证据与来源将在后续数据整理阶段补充。"));
-      body.appendChild(empty);
+    }
+    if (position.object.id) {
+      var origin = catalogueObject(state.originProduct);
+      if (origin) body.appendChild(actionButton("返回 " + origin.name + " 原对象档案", function () {
+        closeDrawer(false);
+        document.dispatchEvent(new CustomEvent("lineage:navigate", { detail: { tab: "catalog", objectId: origin.id, fromGraph: true } }));
+      }));
+      body.appendChild(actionButton("查看 " + position.object.name + " 产品档案", function () {
+        closeDrawer(false);
+        document.dispatchEvent(new CustomEvent("lineage:navigate", { detail: { tab: "catalog", objectId: position.object.id, fromGraph: true } }));
+      }));
+      if (position.kind === "object") {
+        var events = element("section", "fsg-drawer__section");
+        events.appendChild(element("h3", "", "公开事件索引"));
+        position.object.events.forEach(function (record) {
+          events.appendChild(actionButton(record.date + " · " + record.title, function () {
+            var node = Array.from(state.root.querySelectorAll(".fsg-event")).find(function (item) { return item.dataset.eventId === record.id; });
+            openDrawer({ object: position.object, event: record }, node);
+          }));
+        });
+        body.appendChild(events);
+      }
+      window.FULL_STACK_GRAPH_DATA.relations.filter(function (relation) {
+        return position.object.events.some(function (record) { return record.id === relation.from || record.id === relation.to; });
+      }).forEach(function (relation) {
+        var section = paragraphSection("关系说明 · " + relation.label, relation.description || "图中为公开资料关联索引，不据事件先后推定因果。");
+        if (relation.source) {
+          section.appendChild(element("p", "", "依据：" + relation.source.title + " · " + (relation.source.summary || relation.source.supports || "仅支撑所列关系")));
+          if (relation.source.url) {
+            var relationLink = element("a", "fsg-drawer__source-link", "打开关系原始来源（需联网） ↗");
+            relationLink.href = relation.source.url;
+            relationLink.target = "_blank";
+            relationLink.rel = "noopener noreferrer";
+            section.appendChild(relationLink);
+          }
+        }
+        body.appendChild(section);
+      });
     }
     drawer.appendChild(header);
     drawer.appendChild(body);
@@ -478,8 +581,10 @@
     state.scrollLeft = state.scroller.scrollLeft;
     state.returnFocus = trigger;
     state.selectedNode = trigger;
-    state.selectedNode.setAttribute("aria-pressed", "true");
-    state.selectedNode.classList.add("is-selected");
+    if (state.selectedNode) {
+      state.selectedNode.setAttribute("aria-pressed", "true");
+      state.selectedNode.classList.add("is-selected");
+    }
     state.drawerKeyHandler = function (keyboardEvent) {
       if (keyboardEvent.key === "Escape") {
         closeDrawer(true);
@@ -507,6 +612,11 @@
 
   function closeDrawer(restoreFocus) {
     if (!state || !state.backdrop) return;
+    try {
+      var drawerUrl = new URL(window.location.href);
+      drawerUrl.searchParams.delete("event");
+      window.history.replaceState({}, "", drawerUrl.href);
+    } catch (error) { /* 不影响关闭抽屉。 */ }
     if (state.drawerKeyHandler) document.removeEventListener("keydown", state.drawerKeyHandler);
     if (state.backdrop && state.backdrop.parentNode) state.backdrop.remove();
     if (state.selectedNode) {
@@ -523,7 +633,7 @@
     window.requestAnimationFrame(function () {
       if (!state) return;
       state.scroller.scrollLeft = savedScrollLeft;
-      if (restoreFocus && focusTarget && focusTarget.isConnected) focusTarget.focus();
+      if (restoreFocus && focusTarget && focusTarget.isConnected) focusTarget.focus({ preventScroll: true });
     });
   }
 
@@ -537,7 +647,7 @@
     var graphFrame = element("section", "fsg-frame");
     var graphGrid = element("div", "fsg-graph-grid");
     var scroller = element("div", "fsg-scroll");
-    var note = element("p", "fsg-method-note", "说明：分层为基于公开资料的能力逻辑重组，不代表官方内部部署架构或逐层调用顺序。C2 与 Mission Autonomy 为并列核心能力；SDK / API 负责进入语义体系，Mesh 负责跨节点到达。全部里程碑均可点击查看节点状态。");
+    var note = element("p", "fsg-method-note", "说明：分层与关系为公开资料整理，不代表官方内部架构。对象框、事件圆点及外部系统标签均可查看详情；历史日期的核验边界以详情说明为准。来源摘要保存在本地，原文链接需联网。");
     scroller.tabIndex = 0;
     scroller.setAttribute("aria-label", "可横向滚动的技术演化时间轴");
     scroller.appendChild(renderSvg(data));
@@ -547,10 +657,38 @@
     graphFrame.appendChild(note);
     root.appendChild(renderContext(data));
     root.appendChild(renderLegend());
+    var toolbar = element("div", "fsg-toolbar");
+    var searchLabel = element("label", "", "定位研究对象");
+    var search = element("input", "fsg-search");
+    search.type = "search"; search.placeholder = "输入对象名称，如 Ghost 或 Lattice Mesh";
+    search.setAttribute("aria-label", "定位图谱对象");
+    search.setAttribute("list", "graph-object-options");
+    var options = element("datalist"); options.id = "graph-object-options";
+    data.objects.forEach(function (item) { var option = element("option"); option.value = item.name; options.appendChild(option); });
+    searchLabel.appendChild(search); toolbar.appendChild(searchLabel); toolbar.appendChild(options);
+    function searchObject() {
+      var term = search.value.trim().toLowerCase();
+      if (!term) { focusObject(null); return; }
+      var found = data.objects.find(function (item) { return item.name.toLowerCase() === term || item.id === term; }) || data.objects.find(function (item) { return item.name.toLowerCase().indexOf(term) >= 0; });
+      if (term === "ghost-x" || term === "ghost x") found = data.objects.find(function (item) { return item.id === "ghost"; });
+      if (found) focusObject(found.id);
+      else state.status.textContent = "未找到该对象，请从当前图谱对象中选择。";
+    }
+    search.addEventListener("keydown", function (event) { if (event.key === "Enter") searchObject(); });
+    toolbar.appendChild(actionButton("定位", searchObject));
+    toolbar.appendChild(actionButton("查看全图", function () { search.value = ""; focusObject(null); }));
+    toolbar.appendChild(actionButton("适应窗口", function () { state.scroller.classList.remove("is-actual-size"); resizeGraph(); state.scroller.scrollLeft = 0; }));
+    toolbar.appendChild(actionButton("原始比例", function () { state.scroller.classList.add("is-actual-size"); resizeGraph(); }));
+    var status = element("p", "fsg-search-status", "点击对象查看档案，点击圆点查看事件。");
+    status.setAttribute("role", "status"); toolbar.appendChild(status);
+    root.appendChild(toolbar);
     root.appendChild(graphFrame);
     mount.replaceChildren(root);
     state = {
       mount: mount,
+      root: root,
+      status: status,
+      search: search,
       scroller: scroller,
       backdrop: null,
       drawerKeyHandler: null,
@@ -558,6 +696,43 @@
       returnFocus: null,
       scrollLeft: 0
     };
+  }
+
+  function resizeGraph() {
+    if (!state || !state.scroller.clientWidth) return;
+    var width = state.scroller.classList.contains("is-actual-size") ? 1540 : Math.max(700, state.scroller.clientWidth);
+    if (Math.abs(width - GRAPH_WIDTH) < 2) return;
+    GRAPH_WIDTH = width;
+    START_X = 145;
+    YEAR_WIDTH = (GRAPH_WIDTH - START_X - 24) / 9;
+    state.scroller.replaceChildren(renderSvg(window.FULL_STACK_GRAPH_DATA));
+  }
+
+  function focusObject(objectId, eventId, originProduct) {
+    if (!state) return;
+    resizeGraph();
+    if (originProduct !== undefined) state.originProduct = originProduct;
+    var data = window.FULL_STACK_GRAPH_DATA;
+    var selected = data.objects.find(function (item) { return item.id === objectId; });
+    state.focusedObject = selected || null;
+    document.dispatchEvent(new CustomEvent("lineage:object", { detail: selected || { id: "anduril", name: "Anduril Industries" } }));
+    state.root.querySelectorAll(".fsg-object-node,.fsg-event").forEach(function (node) {
+      node.classList.toggle("is-highlighted", !!selected && node.dataset.objectId === selected.id);
+    });
+    state.status.textContent = selected ? "已定位：" + selected.name + " · " + selected.events.length + " 个事件" : "全部对象与事件 · 点击查看本地详情";
+    state.search.value = selected ? selected.name : "";
+    try {
+      var url = new URL(window.location.href);
+      if (selected) url.searchParams.set("graphObject", selected.id); else url.searchParams.delete("graphObject");
+      if (eventId) url.searchParams.set("event", eventId); else url.searchParams.delete("event");
+      if (state.originProduct) url.searchParams.set("fromProduct", state.originProduct);
+      window.history.replaceState({}, "", url.href);
+    } catch (error) { /* file:// 的浏览状态不依赖 History API。 */ }
+    if (!selected) { state.scroller.scrollLeft = 0; return; }
+    var event = selected.events.find(function (item) { return item.id === eventId; });
+    var target = event ? state.root.querySelector('[data-event-id="' + event.id + '"]') : state.root.querySelector('.fsg-object-node[data-object-id="' + selected.id + '"]');
+    if (target) target.scrollIntoView({ block: "center", inline: "center", behavior: "instant" });
+    if (event) openDrawer({ object: selected, event: event }, target);
   }
 
   function destroy() {
@@ -572,6 +747,9 @@
     render: render,
     destroy: destroy,
     closeDrawer: closeDrawer,
+    focusObject: focusObject,
+    getFocusedObject: function () { return state && state.focusedObject || null; },
+    resizeGraph: resizeGraph,
     getCounts: function () {
       var data = window.FULL_STACK_GRAPH_DATA;
       return { objects: data.objects.length, milestones: eventCount(data) };

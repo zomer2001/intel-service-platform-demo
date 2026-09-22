@@ -459,10 +459,10 @@
     "target_id": "lattice-mesh",
     "target_name": "Lattice Mesh",
     "maturity_stages": [
-      { "value": 1, "label": "能力形成" },
-      { "value": 2, "label": "工程验证" },
-      { "value": 3, "label": "规模应用" },
-      { "value": 4, "label": "体系融合" }
+      { "value": 1, "label": "初始架构" },
+      { "value": 2, "label": "分布式/模块化" },
+      { "value": 3, "label": "平台化/规模化" },
+      { "value": 4, "label": "体系化/生态化" }
     ],
     "routes": [
       {
@@ -499,24 +499,31 @@
       }
     ],
     "node_overrides": {
-      "R001": { "evidence_level": "中高", "maturity_dimension": "resilient-network" },
-      "R002": { "evidence_level": "高", "maturity_dimension": "scale" },
-      "R003": { "evidence_level": "高", "maturity_dimension": "scale" },
-      "R004": { "evidence_level": "高", "maturity_dimension": "deployment" },
-      "R005": { "evidence_level": "中高", "maturity_dimension": "core-network" },
-      "R006": { "evidence_level": "中高", "maturity_dimension": "core-network" },
-      "R007": { "evidence_level": "高", "maturity_dimension": "deployment" },
-      "R008": { "evidence_level": "高", "maturity_dimension": "ecosystem" },
-      "R009": { "evidence_level": "中高", "maturity_dimension": "deployment" },
-      "R010": { "evidence_level": "高", "maturity_dimension": "scale" },
-      "R011": { "evidence_level": "高", "maturity_dimension": "scale" },
-      "R012": { "evidence_level": "高", "maturity_dimension": "deployment" },
-      "R013": { "evidence_level": "高", "maturity_dimension": "ecosystem" },
-      "R014": { "evidence_level": "高", "maturity_dimension": "ecosystem" },
-      "R015": { "evidence_level": "高", "maturity_dimension": "ecosystem" },
-      "R016": { "evidence_level": "中高", "maturity_dimension": "ecosystem", "is_new": true }
+      "R017": { "evidence_level": "高", "maturity_dimension": "resilient-network", "evidence_type": "专利", "evidence_label": "US10506436B1：Lattice mesh", "evidence_url": "https://patents.google.com/patent/US10506436B1/en" },
+      "R018": { "evidence_level": "中高", "maturity_dimension": "core-network", "evidence_type": "体系演示", "evidence_label": "早期 Lattice 体系数据融合与连接演示" },
+      "R019": { "evidence_level": "高", "maturity_dimension": "resilient-network", "evidence_type": "多站点演示", "evidence_label": "Anduril：Space Surveillance Network 数据传输韧性", "evidence_url": "https://www.anduril.com/news/anduril-delivers-commercial-data-transport-resilience-to-space-surveillance-network" },
+      "R020": { "evidence_level": "高", "maturity_dimension": "resilient-network", "evidence_type": "真实任务事件", "evidence_label": "Maui GEODSS 通信恢复公开材料" },
+      "R001": { "阶段": 2, "evidence_level": "中高", "maturity_dimension": "resilient-network" },
+      "R002": { "阶段": 3, "evidence_level": "高", "maturity_dimension": "scale" },
+      "R003": { "阶段": 3, "evidence_level": "高", "maturity_dimension": "scale" },
+      "R004": { "阶段": 4, "evidence_level": "高", "maturity_dimension": "deployment" },
+      "R005": { "阶段": 2, "evidence_level": "中高", "maturity_dimension": "core-network" },
+      "R006": { "阶段": 3, "evidence_level": "中高", "maturity_dimension": "core-network" },
+      "R007": { "阶段": 4, "evidence_level": "高", "maturity_dimension": "deployment" },
+      "R008": { "阶段": 4, "evidence_level": "高", "maturity_dimension": "ecosystem" },
+      "R009": { "阶段": 3, "evidence_level": "中高", "maturity_dimension": "deployment" },
+      "R010": { "阶段": 3, "evidence_level": "高", "maturity_dimension": "scale" },
+      "R011": { "阶段": 3, "evidence_level": "高", "maturity_dimension": "scale" },
+      "R012": { "阶段": 4, "evidence_level": "高", "maturity_dimension": "deployment" },
+      "R013": { "阶段": 2, "evidence_level": "高", "maturity_dimension": "ecosystem" },
+      "R014": { "阶段": 3, "evidence_level": "高", "maturity_dimension": "ecosystem" },
+      "R015": { "阶段": 4, "evidence_level": "高", "maturity_dimension": "ecosystem" },
+      "R016": { "阶段": 4, "evidence_level": "中高", "maturity_dimension": "ecosystem", "is_new": true }
     },
     "relations": [
+      { "source": "R017", "target": "R019", "type": "原理到验证", "description": "去中心化连接与发布订阅原理进入多站点任务数据传输验证。" },
+      { "source": "R019", "target": "R001", "type": "任务经验产品化", "description": "多站点与应急通信经验继续演化为面向边缘环境的数据Mesh能力。" },
+      { "source": "R018", "target": "R005", "type": "融合能力演进", "description": "早期体系数据融合逐步演化为异构数据转换与共同数据层。" },
       { "source": "R004", "target": "R007", "type": "汇聚支撑", "description": "边云数据网为共同数据层提供网络底座。" },
       { "source": "R007", "target": "R012", "type": "体系协同", "description": "共同数据层在边缘与云端协同运行。" },
       { "source": "R008", "target": "R015", "type": "模式治理", "description": "数据处理侧的Schema能力转化为开放集成治理能力。" },
@@ -525,6 +532,50 @@
     ]
   },
   "route_evolution": [
+    {
+      "route_id": "R017",
+      "技术路线": "分布式网络",
+      "阶段": 1,
+      "时间": "2018-2019",
+      "节点名称": "Lattice Mesh 原理与专利族",
+      "节点说明": "形成去中心化连接、发布订阅和身份授权等早期架构原理。",
+      "关联事件": "",
+      "节点状态": "原理形成",
+      "数据属性": "公开专利+归纳"
+    },
+    {
+      "route_id": "R018",
+      "技术路线": "数据处理",
+      "阶段": 1,
+      "时间": "2020",
+      "节点名称": "体系级数据融合演示",
+      "节点说明": "早期 Lattice 演示验证跨传感器数据汇聚、识别与任务协同。",
+      "关联事件": "",
+      "节点状态": "体系演示",
+      "数据属性": "公开线索+归纳"
+    },
+    {
+      "route_id": "R019",
+      "技术路线": "分布式网络",
+      "阶段": 2,
+      "时间": "2022",
+      "节点名称": "SSN 多站点 Mesh 传输",
+      "节点说明": "在商业卫星通信与国防网络之间开展多站点双向任务数据传输。",
+      "关联事件": "",
+      "节点状态": "相关环境验证",
+      "数据属性": "公开事实+归纳"
+    },
+    {
+      "route_id": "R020",
+      "技术路线": "边缘计算",
+      "阶段": 2,
+      "时间": "2022-12",
+      "节点名称": "Maui GEODSS 应急通信恢复",
+      "节点说明": "传统通信中断后恢复双向任务通信，并连续承担主要通信链路。",
+      "关联事件": "",
+      "节点状态": "真实任务运行",
+      "数据属性": "公开事实+研判"
+    },
     {
       "route_id": "R001",
       "技术路线": "分布式网络",

@@ -18,8 +18,9 @@
   function validateData(data) {
     if (!data || !data.target || !data.summary) throw new Error("成熟度分析缺少目标或摘要数据。 ");
     if (!data.report || !Array.isArray(data.report.highlights) || !Array.isArray(data.report.sourceIds)) throw new Error("成熟度分析缺少完整报告数据。 ");
-    if (!Array.isArray(data.dimensions) || data.dimensions.length < 1) throw new Error("成熟度分析至少需要 1 个评价维度。 ");
-    if (!Array.isArray(data.trlEvidenceChain) || data.trlEvidenceChain.length < 1) throw new Error("成熟度证据链至少需要 1 个分组阶段。 ");
+    if (!Array.isArray(data.dimensions) || data.dimensions.length !== 7) throw new Error("成熟度分析必须包含 7 个评价维度。 ");
+    if (!Array.isArray(data.trlEvidenceChain) || data.trlEvidenceChain.length !== 6) throw new Error("成熟度证据链必须包含 6 个分组阶段。 ");
+    if (data.trlEvidenceChain.filter(function (row) { return row.interactive; }).length !== 1) throw new Error("成熟度分析只能配置 1 个重点交互阶段。 ");
     data.dimensions.forEach(function (dimension) {
       if (dimension.trlMin < 1 || dimension.trlMax > 9 || dimension.trlMin > dimension.trlMax) {
         throw new Error("成熟度维度的 TRL 范围无效：" + dimension.name);
@@ -65,6 +66,36 @@
     return dimension.status === "validating" ? label + "（验证中）" : label;
   }
 
+  var relatedGap = { "core-network": "G001", "resilient-network": "G002", deployment: "G005", security: "G007", scale: "G005", ecosystem: "G006" };
+
+  function studyLink(label, tab, gap) {
+    var link = element("a", "ma-study-link", label);
+    var current = new URLSearchParams(window.location.search);
+    var url = new URL("./trends.html", window.location.href);
+    url.searchParams.set("tab", tab);
+    url.searchParams.set("object", "lattice");
+    url.searchParams.set("tech", "lattice-mesh");
+    if (gap) url.searchParams.set("gap", gap);
+    if (current.get("route")) url.searchParams.set("route", current.get("route"));
+    link.href = url.href;
+    return link;
+  }
+
+  function renderResearchActions() {
+    var card = element("section", "ma-card ma-study-actions");
+    var copy = element("div");
+    copy.appendChild(element("h2", "", "从成熟度研判转向能力对标"));
+    copy.appendChild(element("p", "", "本报告评估 Lattice Mesh 的公开证据成熟度；后续差距分析使用当前方案样例基线，不是实际测评，百分制样例评分也不等同于 TRL。"));
+    card.appendChild(copy);
+    var actions = element("div", "ma-study-buttons");
+    actions.appendChild(studyLink("返回关键技术路线演化", "routes"));
+    actions.appendChild(studyLink("对比当前方案：弱网与断连运行", "gaps", "G002"));
+    actions.appendChild(studyLink("对比当前方案：数据标准化", "gaps", "G003"));
+    actions.appendChild(studyLink("查看全部关键技术差距", "gaps"));
+    card.appendChild(actions);
+    return card;
+  }
+
   function renderAxis() {
     var axis = element("div", "ma-axis");
     axis.appendChild(element("span", "ma-axis__label", "能力维度"));
@@ -75,15 +106,15 @@
     return axis;
   }
 
-  function renderDimension(dimension, focusDimension) {
-    var row = element("div", "ma-dimension" + (dimension.id === focusDimension ? " is-focused" : ""));
-    row.id = "ma-dimension-" + dimension.id;
+  function renderDimension(dimension) {
+    var row = element("div", "ma-dimension");
     var name = element("div", "ma-dimension__name");
     var labelLine = element("div", "ma-dimension__label-line");
     labelLine.appendChild(element("strong", "", dimension.name));
     if (dimension.primary) labelLine.appendChild(element("span", "ma-primary-badge", "主评级"));
     name.appendChild(labelLine);
     name.appendChild(element("span", "ma-dimension__note", dimension.note));
+    name.appendChild(studyLink(relatedGap[dimension.id] ? "对标相关能力 →" : "查看能力对标维度 →", "gaps", relatedGap[dimension.id]));
 
     var track = element("div", "ma-dimension__track");
     var fill = element("span", "ma-dimension__fill ma-dimension__fill--" + dimension.status);
@@ -110,7 +141,7 @@
     return item;
   }
 
-  function renderChart(data, focusDimension) {
+  function renderChart(data) {
     var card = element("section", "ma-card ma-chart-card");
     var header = element("header", "ma-section-header");
     var title = element("div");
@@ -126,7 +157,7 @@
     header.appendChild(legend);
     card.appendChild(header);
     card.appendChild(renderAxis());
-    data.dimensions.forEach(function (dimension) { card.appendChild(renderDimension(dimension, focusDimension)); });
+    data.dimensions.forEach(function (dimension) { card.appendChild(renderDimension(dimension)); });
     return card;
   }
 
@@ -182,6 +213,7 @@
     footer.appendChild(note);
     footer.appendChild(button);
     card.appendChild(footer);
+    card.appendChild(renderResearchActions());
     return card;
   }
 
@@ -194,7 +226,7 @@
     var header = element("header", "ma-section-header ma-section-header--compact");
     var title = element("div");
     title.appendChild(element("p", "ma-section-header__eyebrow", "EVIDENCE CHAIN"));
-    title.appendChild(element("h2", "", data.summary.primaryCapability + " — TRL 演进证据链"));
+    title.appendChild(element("h2", "", "核心组网与分布式数据连接能力 — TRL 演进证据链"));
     title.appendChild(element("p", "ma-section-header__description", "分组展示从原理线索、相关环境验证到真实任务运行的公开证据演进。"));
     header.appendChild(title);
     card.appendChild(header);
@@ -203,7 +235,7 @@
     var table = element("table", "ma-table");
     var thead = element("thead");
     var headRow = element("tr");
-    ["TRL 阶段", "评级判据摘要", data.target.object + " 对应公开证据 / 工程映射", "证据性质", "判定"].forEach(function (label) {
+    ["TRL 阶段", "评级判据摘要", "Lattice Mesh 对应公开证据 / 工程映射", "证据性质", "判定"].forEach(function (label) {
       headRow.appendChild(element("th", "", label));
     });
     thead.appendChild(headRow);
@@ -222,7 +254,7 @@
       if (entry.interactive) {
         var button = element("button", "ma-detail-button", "查看评级依据");
         button.type = "button";
-        button.addEventListener("click", function () { openDrawer(button, entry); });
+        button.addEventListener("click", function () { openDrawer(button); });
         decision.appendChild(button);
       }
       row.appendChild(stage);
@@ -354,6 +386,8 @@
     facts.appendChild(fact("更新时间", report.updatedAt));
     body.appendChild(facts);
 
+    body.appendChild(renderResearchActions());
+
     var executive = reportSection("执行摘要");
     report.executiveSummary.forEach(function (paragraph) { executive.appendChild(element("p", "", paragraph)); });
     body.appendChild(executive);
@@ -376,7 +410,7 @@
     report.dimensionAnalysis.forEach(function (analysis) {
       var dimension = dimensions[analysis.dimensionId];
       if (!dimension) return;
-      var row = element("article", "ma-report__dimension" + (state.focusDimension === analysis.dimensionId ? " is-focused" : ""));
+      var row = element("article", "ma-report__dimension");
       var label = element("div", "ma-report__dimension-label");
       label.appendChild(element("strong", "", dimension.name));
       label.appendChild(element("span", "ma-dimension__rating ma-dimension__rating--" + dimension.status, ratingLabel(dimension)));
@@ -435,13 +469,12 @@
 
     drawer.appendChild(header);
     drawer.appendChild(body);
-    mountDrawer(trigger, drawer, closeButton, report.title);
+    mountDrawer(trigger, drawer, closeButton, "Lattice Mesh 技术成熟度综合分析报告");
   }
 
-  function openDrawer(trigger, selectedEntry) {
+  function openDrawer(trigger) {
     if (!state) return;
     var data = state.data;
-    var featuredEntry = selectedEntry || data.trlEvidenceChain.find(function (entry) { return entry.interactive; }) || data.trlEvidenceChain[data.trlEvidenceChain.length - 1];
     var sources = sourceMap(data);
     var drawer = element("aside", "ma-drawer");
     var header = element("header", "ma-drawer__header");
@@ -453,7 +486,7 @@
     var explanation = element("section", "ma-drawer__section ma-drawer__explanation");
 
     heading.appendChild(element("p", "ma-drawer__kicker", "OPEN-SOURCE TRL ASSESSMENT"));
-    heading.appendChild(element("h2", "", featuredEntry.stage + " 评级依据"));
+    heading.appendChild(element("h2", "", "TRL 9 评级依据"));
     closeButton.type = "button";
     closeButton.setAttribute("aria-label", "关闭 TRL 9 评级依据");
     closeButton.addEventListener("click", function () { closeDrawer(true); });
@@ -464,9 +497,9 @@
     facts.appendChild(fact("当前判定", data.summary.rating));
     facts.appendChild(fact("评价性质", "基于公开资料研判"));
     criterion.appendChild(element("h3", "", "评级判据"));
-    criterion.appendChild(element("p", "", featuredEntry.criterion));
+    criterion.appendChild(element("p", "", "实际最终系统在真实任务条件下完成运行，并由持续部署或项目化使用证明其有效性。"));
     explanation.appendChild(element("h3", "", "评级说明"));
-    explanation.appendChild(element("p", "", "当前结论由与本技术对象相关的公开证据综合支撑；不同能力维度可能处于不同TRL区间，页面高亮项表示本次路线节点关联的重点维度。"));
+    explanation.appendChild(element("p", "", "当前结论主要由实际任务部署和持续运行证据支撑；体系内其他 Lattice 能力和装备部署仅作为成熟生态与平台兼容性的辅助佐证。"));
     body.appendChild(facts);
     body.appendChild(criterion);
     body.appendChild(evidenceGroup(data, "direct", "直接实证", sources));
@@ -474,7 +507,7 @@
     body.appendChild(explanation);
     drawer.appendChild(header);
     drawer.appendChild(body);
-    mountDrawer(trigger, drawer, closeButton, featuredEntry.stage + " 评级依据");
+    mountDrawer(trigger, drawer, closeButton, "TRL 9 评级依据");
   }
 
   function closeDrawer(restoreFocus) {
@@ -489,48 +522,24 @@
     if (restoreFocus && returnFocus && returnFocus.isConnected) returnFocus.focus();
   }
 
-  function renderRouteContext(query, data, focusDimension) {
-    if (query.get("from") !== "routes") return null;
-    var nodeId = query.get("node") || "";
-    var nodeTitle = query.get("nodeTitle") || nodeId || "路线节点";
-    var dimension = data.dimensions.find(function (item) { return item.id === focusDimension; });
-    var context = element("aside", "ma-route-context");
-    var copy = element("div");
-    copy.appendChild(element("span", "ma-route-context__eyebrow", "由关键技术路线下钻"));
-    copy.appendChild(element("strong", "", nodeTitle));
-    copy.appendChild(element("p", "", dimension ? "已自动定位成熟度维度：“" + dimension.name + "”。路线节点属于演化里程碑，以下报告仍以所属技术对象为评价主体。" : "已进入该路线节点所属技术对象的成熟度分析。"));
-    var back = element("a", "ma-route-context__back", "← 返回技术路线演化");
-    back.href = "./trends.html?tab=routes" + (nodeId ? "&focus=" + encodeURIComponent(nodeId) : "");
-    context.appendChild(copy);
-    context.appendChild(back);
-    return context;
-  }
-
   function render(containerId) {
     destroy();
     var mount = document.getElementById(containerId);
     if (!mount) throw new Error("成熟度分析缺少挂载节点：" + containerId);
-    var query = new URLSearchParams(window.location.search);
-    var targetId = query.get("target") || "lattice-mesh";
-    var datasets = window.MATURITY_ANALYSIS_DATASETS || {};
-    var data = datasets[targetId] || window.MATURITY_ANALYSIS_DATA;
-    var focusDimension = query.get("dimension");
-    if (!data.dimensions.some(function (dimension) { return dimension.id === focusDimension; })) focusDimension = null;
+    var data = window.MATURITY_ANALYSIS_DATA;
     validateData(data);
     var root = element("div", "ma-root");
     var disclaimer = element("aside", "ma-disclaimer");
     disclaimer.appendChild(element("span", "ma-disclaimer__mark", "i"));
     disclaimer.appendChild(element("p", "", data.summary.disclaimer));
     root.appendChild(renderContext(data));
-    var routeContext = renderRouteContext(query, data, focusDimension);
-    if (routeContext) root.appendChild(routeContext);
     root.appendChild(disclaimer);
     root.appendChild(renderSummary(data));
-    root.appendChild(renderChart(data, focusDimension));
+    root.appendChild(renderChart(data));
     root.appendChild(renderReportSummary(data));
     root.appendChild(renderEvidenceChain(data));
     mount.replaceChildren(root);
-    state = { mount: mount, data: data, targetId: targetId, focusDimension: focusDimension, backdrop: null, keyHandler: null, returnFocus: null };
+    state = { mount: mount, data: data, backdrop: null, keyHandler: null, returnFocus: null };
   }
 
   function destroy() {

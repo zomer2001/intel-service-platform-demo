@@ -78,12 +78,12 @@
       description: "对文本、图片、表格和结构化记录进行对象级对齐，识别来源独立性与条件约束，形成可追溯的融合事实和动态演化关系。"
     },
     phases: [
-      { label: "多模态解析", duration: 2900 },
-      { label: "对象对齐", duration: 3400 },
-      { label: "来源独立性", duration: 2900 },
-      { label: "事实融合", duration: 4000 },
-      { label: "条件与冲突", duration: 2900 },
-      { label: "演化关联", duration: 3900 }
+      { label: "多模态解析", duration: 2465 },
+      { label: "对象对齐", duration: 2890 },
+      { label: "来源独立性", duration: 2465 },
+      { label: "事实融合", duration: 3400 },
+      { label: "条件与冲突", duration: 2465 },
+      { label: "演化关联", duration: 3315 }
     ],
     sourceFamilies: [
       { id: "family-anduril", label: "Family A", publisher: "Anduril Industries", sourceType: "First Party", independent: true },

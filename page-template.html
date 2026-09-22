@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>情报服务平台｜页面模板</title>
+    <link rel="stylesheet" href="./css/variables.css">
+    <link rel="stylesheet" href="./css/layout.css">
+    <link rel="stylesheet" href="./css/components.css">
+  </head>
+  <body>
+    <div id="app"></div>
+
+    <script src="./js/data.js"></script>
+    <script src="./js/layout.js"></script>
+    <script src="./js/components.js"></script>
+    <script src="./js/evidence.js"></script>
+    <script src="./js/workflow.js"></script>
+    <script>
+      (function () {
+        "use strict";
+        var components = window.PlatformComponents;
+        var shell = window.renderPlatform({
+          projectTitle: "情报分析工作台",
+          analysisLevel: "待确定",
+          currentObject: "未识别",
+          taskStatus: "待创建",
+          activeNavigation: "综合工作台"
+        });
+
+        var content = components.element("div", "content-stack");
+        var header = components.element("header", "page-header");
+        var titleGroup = components.element("div");
+        titleGroup.appendChild(components.element("h1", "", "页面标题"));
+        titleGroup.appendChild(components.element("p", "page-header__description", "在这里填写页面说明。"));
+        header.appendChild(titleGroup);
+        content.appendChild(header);
+        content.appendChild(components.createCard({
+          eyebrow: "页面主体",
+          title: "替换此区域内容",
+          description: "复制本文件后，保留公共资源引用和 renderPlatform 调用，仅替换页面标题与主体。"
+        }));
+        shell.workspace.appendChild(content);
+      }());
+    </script>
+  </body>
+</html>

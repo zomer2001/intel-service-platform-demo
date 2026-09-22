@@ -1577,3 +1577,20 @@ button.intel-list-card:hover {
   .intel-progress__bar { transition: none; }
   .intel-route-point__pulse { animation: none; }
 }
+
+.intel-gap-method {
+  margin: 16px 0;
+  border: 1px solid #cbdced;
+  border-radius: 10px;
+  background: #f7faff;
+  padding: 14px 18px;
+}
+.intel-gap-method summary { cursor: pointer; color: #1f4f7c; font-weight: 700; }
+.intel-gap-method > p { color: #52677c; line-height: 1.7; }
+.intel-gap-method__grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
+.intel-gap-method__grid article { border: 1px solid #dbe7f3; border-radius: 8px; background: #fff; padding: 12px; }
+.intel-gap-method__grid strong { color: #234c73; font-size: 13px; }
+.intel-gap-method__grid p { margin: 6px 0 0; color: #65788b; font-size: 12px; line-height: 1.55; }
+.intel-gap-source-panel { margin-top: 14px; border-top: 1px solid #dbe5ef; padding-top: 12px; }
+.intel-gap-source-panel > p { margin: 5px 0 10px; color: #66798c; font-size: 12px; line-height: 1.6; }
+@media (max-width: 1100px) { .intel-gap-method__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

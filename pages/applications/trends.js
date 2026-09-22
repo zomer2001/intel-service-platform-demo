@@ -37,19 +37,28 @@
   var tablist = components.element("div", "tabs");
   var buttons = {};
   var panels = {};
+  var cleanupActivePanel = null;
   tablist.setAttribute("role", "tablist");
   tablist.setAttribute("aria-label", "技术发展态势研判成果分类");
 
-  function updateUrl(tabId) {
+  function updateUrl(tabId, context) {
     try {
       var url = new URL(window.location.href);
       url.searchParams.set("tab", tabId);
-      if (tabId !== "routes") url.searchParams.delete("focus");
+      Object.keys(context || {}).forEach(function (key) {
+        if (context[key]) url.searchParams.set(key, context[key]);
+        else url.searchParams.delete(key);
+      });
       window.history.replaceState({}, "", url.href);
     } catch (error) { /* file:// 下仍保留当前交互。 */ }
   }
 
-  function selectTab(tabId, focus) {
+  function selectTab(tabId, focus, context) {
+    if (!tabs.some(function (tab) { return tab.id === tabId; })) return;
+    var closeDrawer = document.querySelector(".drawer__close");
+    if (closeDrawer) closeDrawer.click();
+    if (cleanupActivePanel) cleanupActivePanel();
+    cleanupActivePanel = null;
     active = tabId;
     tabs.forEach(function (tab) {
       var selected = tab.id === tabId;
@@ -59,7 +68,12 @@
     });
     var selectedTab = tabs.find(function (tab) { return tab.id === tabId; });
     document.title = "情报服务平台｜" + selectedTab.label;
-    updateUrl(tabId);
+    updateUrl(tabId, context);
+    cleanupActivePanel = window.PlatformModules.trendAnalysis.render(tabId, "trend-mount-" + tabId) || null;
+    var meshContext = tabId === "routes" || tabId === "gaps";
+    shell.shell.querySelector(".topbar__project").textContent = meshContext ? "Lattice Mesh 专项分析" : "Lattice 平台专项分析";
+    shell.shell.querySelector(".topbar__level").textContent = meshContext ? "技术级分析" : "平台级分析";
+    shell.shell.querySelector(".topbar__object").textContent = meshContext ? "当前对象：Lattice Mesh" : "当前对象：Lattice";
     if (focus) buttons[tabId].focus();
   }
 
@@ -93,6 +107,9 @@
   card.insertBefore(viewport, card.firstChild);
   content.appendChild(card);
   shell.workspace.appendChild(content);
-  tabs.forEach(function (tab) { window.PlatformModules.trendAnalysis.render(tab.id, "trend-mount-" + tab.id); });
+  window.addEventListener("trend-analysis:navigate", function (event) {
+    var target = event.detail || {};
+    selectTab(target.tab, false, target.context);
+  });
   selectTab(active, false);
 }());

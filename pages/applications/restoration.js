@@ -8,8 +8,7 @@
     { id: "opensource", label: "开源项目索引矩阵" },
     { id: "parameters", label: "仿真验证参数包" }
   ];
-  var query = new URLSearchParams(window.location.search);
-  var requested = query.get("tab") || "scenarios";
+  var requested = new URLSearchParams(window.location.search).get("tab") || "scenarios";
   var active = tabs.some(function (tab) { return tab.id === requested; }) ? requested : "scenarios";
   var shell = window.renderPlatform({
     projectTitle: "Lattice Mesh 技术还原专项",
@@ -41,16 +40,24 @@
   tablist.setAttribute("role", "tablist");
   tablist.setAttribute("aria-label", "技术辅助还原与破解成果分类");
 
-  function updateUrl(tabId) {
+  function updateUrl(tabId, context) {
     try {
       var url = new URL(window.location.href);
       url.searchParams.set("tab", tabId);
+      Object.keys(context || {}).forEach(function (key) {
+        if (["object", "tech", "route", "gap", "project", "node", "group", "scope"].indexOf(key) < 0) return;
+        if (context[key] === null || context[key] === "") url.searchParams.delete(key);
+        else url.searchParams.set(key, context[key]);
+      });
       window.history.replaceState({}, "", url.href);
     } catch (error) { /* file:// 下仍保留当前交互。 */ }
   }
 
-  function selectTab(tabId, focus) {
+  function selectTab(tabId, focus, context) {
+    if (!tabs.some(function (tab) { return tab.id === tabId; })) return;
+    window.PlatformModules.restorationAnalysis.deactivate();
     active = tabId;
+    updateUrl(tabId, context);
     tabs.forEach(function (tab) {
       var selected = tab.id === tabId;
       buttons[tab.id].setAttribute("aria-selected", selected ? "true" : "false");
@@ -59,7 +66,7 @@
     });
     var selectedTab = tabs.find(function (tab) { return tab.id === tabId; });
     document.title = "情报服务平台｜" + selectedTab.label;
-    updateUrl(tabId);
+    window.PlatformModules.restorationAnalysis.render(tabId, "restore-mount-" + tabId);
     if (focus) buttons[tabId].focus();
   }
 
@@ -93,9 +100,11 @@
   card.insertBefore(viewport, card.firstChild);
   content.appendChild(card);
   shell.workspace.appendChild(content);
-  tabs.forEach(function (tab) { window.PlatformModules.restorationAnalysis.render(tab.id, "restore-mount-" + tab.id); });
+  window.RestorationPage = {
+    selectTab: function (tabId, context) { selectTab(tabId, false, context); },
+    updateContext: function (context) { updateUrl(active, context); }
+  };
+  window.addEventListener("restoration:select-tab", function (event) { var detail = event.detail || {}; selectTab(detail.tab, false, detail.context); });
+  window.addEventListener("popstate", function () { selectTab(new URLSearchParams(window.location.search).get("tab") || "scenarios", false); });
   selectTab(active, false);
-  if (active === "opensource" && query.get("project")) {
-    window.setTimeout(function () { window.PlatformModules.restorationAnalysis.openProjectById(query.get("project")); }, 0);
-  }
 }());

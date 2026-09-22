@@ -128,13 +128,13 @@
     },
     stages: [
       { label: "目标定义", title: "还原目标定义", duration: 900 },
-      { label: "证据汇聚", title: "多源技术证据汇聚", duration: 1700 },
-      { label: "体系还原", title: "技术体系与机理还原", duration: 1800 },
-      { label: "缺口识别", title: "关键技术缺口识别", duration: 1400 },
-      { label: "候选机制", title: "候选技术机制生成", duration: 1400 },
-      { label: "证据筛选", title: "候选证据汇总与筛选", duration: 1200 },
-      { label: "验证设计", title: "仿真与验证方案设计", duration: 1200 },
-      { label: "还原成果", title: "技术还原成果生成", duration: 1400 }
+      { label: "证据汇聚", title: "多源技术证据汇聚", duration: 1400 },
+      { label: "体系还原", title: "技术体系与机理还原", duration: 1500 },
+      { label: "缺口识别", title: "关键技术缺口识别", duration: 1150 },
+      { label: "候选机制", title: "候选技术机制生成", duration: 1150 },
+      { label: "证据筛选", title: "候选证据汇总与筛选", duration: 950 },
+      { label: "验证设计", title: "仿真与验证方案设计", duration: 950 },
+      { label: "还原成果", title: "技术还原成果生成", duration: 1300 }
     ],
     restorationGoals: [
       { title: "技术体系", description: "识别主要能力域及层次关系。" },

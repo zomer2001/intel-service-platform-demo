@@ -99,12 +99,12 @@
       description: "围绕当前分析任务，从多源候选情报中综合判断其任务相关性、证据质量、技术信息增量、关键未知补全能力和后续行动价值。"
     },
     phases: [
-      { label: "候选情报进入", duration: 3600 },
-      { label: "六维价值分析", duration: 4300 },
-      { label: "综合优先级排序", duration: 3600 },
-      { label: "切换技术还原优先", duration: 3600 },
-      { label: "排名动态变化", duration: 2800 },
-      { label: "高价值结果输出", duration: 2100 }
+      { label: "候选情报进入", duration: 3060 },
+      { label: "六维价值分析", duration: 3655 },
+      { label: "综合优先级排序", duration: 3060 },
+      { label: "切换技术还原优先", duration: 3060 },
+      { label: "排名动态变化", duration: 2380 },
+      { label: "高价值结果输出", duration: 1785 }
     ],
     dimensions: [
       { key: "relevance", label: "任务相关性", description: "是否直接回答当前情报任务" },

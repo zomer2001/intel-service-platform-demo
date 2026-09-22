@@ -10,6 +10,72 @@
 
   function el(tag, className, text) { return components.element(tag, className, text); }
 
+  var gapProjectMapping = {
+    G001: { name: "分布式Mesh架构", node: "O04", projects: ["R01", "R02", "R04"] },
+    G002: { name: "弱网/断连环境运行", node: "O05", projects: ["R03", "R04", "R07", "R08", "R12"] },
+    G003: { name: "异构数据转换与标准化", node: "O07", projects: ["R05", "R02"] },
+    G004: { name: "智能路由与优先级管理", node: "O04", projects: ["R01", "R02", "R06"] },
+    G005: { name: "边缘计算与大规模终端协同", node: "O09", projects: ["R09", "R10", "R11"] },
+    G006: { name: "开放数据模型与SDK生态", node: "O08", projects: ["R05", "R06"] },
+    G007: { name: "跨域/联盟级系统集成", node: "O08", projects: ["R05", "R06", "R08"] }
+  };
+
+  var dynamicCandidate = {
+    id: "R12", node: "O11", name: "Eclipse Zenoh", url: "https://github.com/eclipse-zenoh/zenoh",
+    language: "Rust", license: "EPL-2.0 OR Apache-2.0", reuse: "原理参考", match: 80, credibility: 90, activity: "高", tests: "完整",
+    note: "Eclipse Zenoh 公开仓库作为新增候选，可用于继续核验数据路由、查询与边缘存储能力。",
+    sourceRef: "main", snapshotDate: "2026-09-20", publicFact: "公开 Rust 实现包含核心协议、插件、示例和测试入口。",
+    capabilities: ["数据路由", "查询与订阅", "边缘存储", "Rust实现参考"],
+    extractionAdvice: "先核验协议、存储和安全边界，再运行最小发布订阅与查询示例。",
+    files: [["zenoh/", "核心协议、路由和会话实现。", "核心实现"], ["plugins/", "存储、网关和扩展插件。", "扩展参考"], ["examples/", "发布、订阅、查询和存储示例。", "直接验证"], ["tests/", "协议与运行行为测试。", "可信核验"], ["Cargo.toml", "Rust workspace 与依赖入口。", "构建入口"]],
+    architecture: { flow: [["API与会话层", "订阅、查询和会话接口"], ["路由与协议层", "节点发现、路由和数据分发"], ["插件与存储层", "边缘存储、网关和扩展能力"]], notes: [["核心调用链", "数据发布 → 路由/查询 → 订阅消费或边缘存储。"], ["适配边界", "协议兼容、安全与资源约束仍需复核。"]] }
+  };
+
+  function readContext() {
+    var query = new URLSearchParams(window.location.search);
+    return {
+      object: query.get("object") || "lattice",
+      tech: query.get("tech") || "lattice-mesh",
+      route: query.get("route") || "",
+      gap: query.get("gap") || "",
+      project: query.get("project") || "",
+      node: query.get("node") || "",
+      scope: query.get("scope") || "related"
+    };
+  }
+
+  function findProject(id) {
+    return data.opensource_projects.find(function (item) { return item.id === id; }) || (id === dynamicCandidate.id ? dynamicCandidate : null);
+  }
+
+  function updateContext(patch) {
+    if (window.RestorationPage) window.RestorationPage.updateContext(patch);
+  }
+
+  function goToTab(tab, patch) {
+    var close = document.querySelector("#overlay-host .drawer__close");
+    if (close) close.click();
+    if (window.RestorationPage) window.RestorationPage.selectTab(tab, patch || {});
+  }
+
+  function contextBar(tabId) {
+    var context = readContext();
+    var gap = gapProjectMapping[context.gap];
+    var project = findProject(context.project);
+    var bar = el("section", "rest-flow-context");
+    var copy = el("div", "rest-flow-context__copy");
+    copy.appendChild(el("strong", "", gap ? "来源差距 · " + context.gap + " " + gap.name : "Lattice Mesh · 开源项目与验证准备"));
+    copy.appendChild(el("p", "", project ? "当前项目：" + project.name + "。验证参数包由该项目的真实仓库快照、文件、架构和系统研判生成。" : "选择真实开源项目，查看代码、架构、可提取能力和项目验证参数包。"));
+    copy.appendChild(el("small", "", "公开仓库事实与系统研判分别标注；不代表 Lattice 实际采用这些项目。"));
+    var actions = el("div", "rest-flow-context__actions");
+    if (tabId === "parameters") actions.appendChild(button("返回开源项目", "secondary", function () { goToTab("opensource", { project: context.project || null }); }));
+    var back = el("a", "button button--secondary", gap ? "返回原差距" : "返回技术差距");
+    back.href = "./trends.html?tab=gaps&object=lattice&tech=lattice-mesh" + (context.gap ? "&gap=" + encodeURIComponent(context.gap) : "") + (context.route ? "&route=" + encodeURIComponent(context.route) : "");
+    actions.appendChild(back);
+    bar.appendChild(copy); bar.appendChild(actions);
+    return bar;
+  }
+
   function formalText(value) {
     return String(value === undefined || value === null ? "—" : value)
       .replace(/DEMO/gi, "样例")
@@ -250,6 +316,7 @@
   }
 
   function projectDrawer(project) {
+    updateContext({ project: project.id });
     var node = data.opensource_nodes.find(function (item) { return item.id === project.node; });
     var nodeName = node ? node.name : project.node;
     var resourceTypes = {
@@ -337,7 +404,9 @@
       control.setAttribute("aria-selected", index === 0 ? "true" : "false");
       control.addEventListener("click", function () { paint(tab.id); }); tablist.appendChild(control);
     });
-    wrapper.appendChild(metrics); wrapper.appendChild(tablist); wrapper.appendChild(content); paint("overview");
+    var projectActions = el("div", "rest-flow-context__actions rest-repo-business-actions");
+    projectActions.appendChild(button("查看项目验证参数包", "primary", function () { goToTab("parameters", { project: project.id, node: project.node }); }));
+    wrapper.appendChild(metrics); wrapper.appendChild(projectActions); wrapper.appendChild(tablist); wrapper.appendChild(content); paint("overview");
     components.openDrawer({
       kicker: "‹/› 开源项目工程详情 · " + project.id,
       title: project.name,
@@ -490,15 +559,17 @@
   function renderOpenSource(mount) {
     var panel = el("div", "rest-os-page");
     var state = runtime.opensource;
-    var selectedNodeId = "O00";
+    var context = readContext();
+    var sourceGap = gapProjectMapping[context.gap];
+    var selectedNodeId = context.node || (sourceGap ? sourceGap.node : "O00");
     var sortMode = "combined";
     var levels = ["目标技术", "关键能力", "功能模块", "实现单元", "开源 / 自研结果"];
     var stepDefinitions = [
-      { label: "拆解智能体", note: "识别未覆盖单元", trace: "输入：当前 O11 增量状态 · 动作：拆解为状态合并与边缘数据协同 · 输出：检索目标" },
-      { label: "发现智能体", note: "检索代码与文档", trace: "输入：检索目标 · 动作：比对公开仓库描述、目录和语言 · 输出：Eclipse Zenoh 候选" },
-      { label: "核验智能体", note: "检查许可、维护与测试", trace: "输入：候选仓库 · 动作：核对 LICENSE、分支、测试和核心目录 · 输出：事实字段" },
-      { label: "映射智能体", note: "评估复用和适配程度", trace: "输入：事实字段 + O11 技术单元 · 动作：计算匹配与复用判断 · 输出：80 分 / 原理参考" },
-      { label: "版本智能体", note: "写入索引与变更记录", trace: "输入：候选与评分 · 动作：写入索引版本并标记人工复核 · 输出：index_v_2026_m8.3" }
+      { label: "拆解智能体", note: "识别未覆盖单元", tool: "Skill · capability-decompose", material: "O11 状态同步单元", output: "search-target.json", duration: "1.2s", trace: "拆解为状态合并、边缘数据协同和恢复验证目标。" },
+      { label: "发现智能体", note: "检索代码与文档", tool: "MCP · GitHub search", material: "关键词 + 技术标签 + 许可证条件", output: "candidate/R12", duration: "3.6s", trace: "比对仓库描述、目录和语言，发现 Eclipse Zenoh 候选。" },
+      { label: "核验智能体", note: "检查许可、维护与测试", tool: "MCP · repository reader", material: "README / LICENSE / Cargo.toml / tests", output: "facts/R12.json", duration: "4.1s", trace: "核对许可、默认分支、测试和核心目录，提取公开事实字段。" },
+      { label: "映射智能体", note: "评估复用和适配程度", tool: "Skill · technology-mapping", material: "仓库事实 + O11 技术单元", output: "assessment/R12.json", duration: "2.8s", trace: "计算匹配与复用判断，输出 80 分及原理参考结论。" },
+      { label: "版本智能体", note: "写入索引与变更记录", tool: "MCP · local index writer", material: "候选记录 + 评分 + 审核状态", output: "index_v_2026_m8.3", duration: "1.4s", trace: "写入索引版本并标记人工复核，保留完整审计记录。" }
     ];
     var discoveredProject = {
       id: "R12",
@@ -523,6 +594,7 @@
       files: [["zenoh/", "核心协议、路由和会话实现。", "核心实现"], ["plugins/", "存储、网关和扩展插件。", "扩展参考"], ["examples/", "发布、订阅、查询和存储示例。", "直接验证"], ["tests/", "协议与运行行为测试。", "可信核验"], ["Cargo.toml", "Rust workspace 与依赖入口。", "构建入口"]],
       architecture: {"flow": [["API与会话层", "应用通过订阅、查询和会话接口接入"], ["路由与协议层", "节点发现、路由、查询和数据分发"], ["插件与存储层", "边缘存储、网关和扩展运行能力"]], "notes": [["公开入口", "zenoh/、plugins/ 和 examples/ 可定位核心与扩展边界。"], ["核心调用链", "数据发布 → 路由 / 查询 → 订阅消费或边缘存储。"], ["适配边界", "本轮仅作新增候选，协议兼容、安全和资源约束需要复核。"], ["后续动作", "进入下一轮许可、版本和最小样例核验。"]]}
     };
+    discoveredProject = dynamicCandidate;
 
     function currentProjects() {
       var projects = data.opensource_projects.slice();
@@ -530,6 +602,7 @@
         var deltaIndex = projects.findIndex(function (project) { return project.id === "R08"; });
         projects.splice(deltaIndex < 0 ? projects.length : deltaIndex + 1, 0, discoveredProject);
       }
+      if (sourceGap && context.scope !== "all") projects = projects.filter(function (project) { return sourceGap.projects.indexOf(project.id) >= 0; });
       return projects;
     }
 
@@ -555,6 +628,7 @@
       return head;
     }
 
+    panel.appendChild(contextBar("opensource"));
     var banner = el("section", "rest-os-banner");
     var bannerCopy = el("div", "rest-os-banner__copy");
     bannerCopy.appendChild(badge("动态运行能力", "success"));
@@ -628,7 +702,7 @@
     var traceBox = el("div", "rest-os-agent-trace");
     var traceHead = el("div", "rest-os-agent-trace__head");
     traceHead.appendChild(el("strong", "", "可审计执行记录"));
-    traceHead.appendChild(el("span", "", "展示输入、动作与输出，不展示不可复核的内部思维内容"));
+    traceHead.appendChild(el("span", "", "RUN OSS-INDEX-0821 · 离线流程回放 / MCP 映射示意"));
     traceBox.appendChild(traceHead);
     var traceNodes = [];
     stepDefinitions.forEach(function (definition, index) {
@@ -637,7 +711,10 @@
       trace.appendChild(el("i", "", "0" + (index + 1)));
       var traceCopy = el("div");
       traceCopy.appendChild(el("strong", "", definition.label));
-      traceCopy.appendChild(el("span", "", definition.trace));
+      traceCopy.appendChild(el("span", "", definition.tool + " · " + definition.duration + " · 状态：待执行"));
+      traceCopy.appendChild(el("span", "", "读取：" + definition.material));
+      traceCopy.appendChild(el("span", "", "写入：" + definition.output));
+      traceCopy.appendChild(el("span", "", "判断摘要：" + definition.trace));
       trace.appendChild(traceCopy);
       traceBox.appendChild(trace);
       traceNodes.push(trace);
@@ -769,6 +846,9 @@
       sortActions.appendChild(control);
       sortButtons.push(control);
     });
+    if (sourceGap) sortActions.appendChild(button(context.scope === "all" ? "仅看本差距候选" : "查看全部项目", "secondary", function () {
+      goToTab("opensource", { scope: context.scope === "all" ? null : "all", project: null });
+    }));
     var projectHeading = createPanelHeader("Lattice Mesh技术破解目标 · 开源项目映射", "当前覆盖率 68% · 共 11 个候选资源", sortActions);
     projectPanel.appendChild(projectHeading);
     var projectTitle = projectHeading.querySelector("h2");
@@ -815,7 +895,7 @@
     function paintProjects() {
       var projects = currentProjects();
       var sourceOrder = projects.map(function (project) { return project.id; });
-      var filtered = selectedNodeId === "O00" ? projects : projects.filter(function (project) { return project.node === selectedNodeId; });
+      var filtered = sourceGap && context.scope !== "all" ? projects : (selectedNodeId === "O00" ? projects : projects.filter(function (project) { return project.node === selectedNodeId; }));
       if (!filtered.length) filtered = projects;
       filtered.sort(function (left, right) {
         if (sortMode === "credibility") return right.credibility - left.credibility;
@@ -904,10 +984,67 @@
       }, 650);
     }
 
-    selectNode("O00");
+    selectNode(selectedNodeId);
     updateRuntimeView();
     mount.replaceChildren(panel);
     if (!state.running && !state.finished) window.setTimeout(runDiscovery, 300);
+    if (context.project) window.setTimeout(function () {
+      var requestedProject = context.project === "R12" ? discoveredProject : findProject(context.project);
+      if (requestedProject) projectDrawer(requestedProject);
+    }, 0);
+  }
+
+  function renderProjectPackage(mount, project) {
+    var panel = el("div", "rest-param-page rest-project-package");
+    panel.appendChild(contextBar("parameters"));
+    var node = data.opensource_nodes.find(function (item) { return item.id === project.node; });
+    var packageData = {
+      meta: { packageType: "project_validation_package", projectId: project.id, projectName: project.name, repository: project.url, sourceRef: project.sourceRef || "main", snapshotDate: project.snapshotDate || data.meta.generated_at, disclaimer: "公开仓库事实与系统研判组合形成；未执行真实仿真，不代表 Lattice 实际采用。" },
+      assessment: { match: project.match, credibility: project.credibility, activity: project.activity, tests: project.tests, reuse: project.reuse, targetNode: node ? node.name : project.node },
+      capabilities: project.capabilities || [], files: project.files || [], architecture: project.architecture || {}, extractionAdvice: project.extractionAdvice || project.note
+    };
+    var banner = el("section", "rest-os-banner rest-param-banner");
+    var copy = el("div", "rest-os-banner__copy");
+    copy.appendChild(badge("项目内验证参数包", "success"));
+    copy.appendChild(el("h2", "", project.name + " · 仿真验证参数包"));
+    copy.appendChild(el("p", "", "以真实仓库快照为对象，将项目概览、代码入口、架构、可提取能力和研判评分组织为验证准备包。"));
+    var stats = el("div", "rest-os-banner__stats");
+    [["匹配度", project.match], ["可信度", project.credibility], ["维护活跃度", project.activity], ["测试情况", project.tests]].forEach(function (item) { var stat = el("span", "rest-os-banner__stat"); stat.appendChild(el("b", "", item[1])); stat.appendChild(document.createTextNode(item[0])); stats.appendChild(stat); });
+    banner.appendChild(copy); banner.appendChild(stats); panel.appendChild(banner);
+
+    var notice = el("div", "rest-os-notice"); notice.appendChild(el("span", "", "i")); notice.appendChild(el("p", "", "许可证、语言、目录和仓库链接属于公开事实；匹配度、可信度、可提取能力和复用判断属于系统研判。当前仅完成验证准备，未运行真实仿真。")); panel.appendChild(notice);
+
+    var overview = el("div", "intel-grid-2");
+    overview.appendChild(section("项目与目标映射", "从差距维度定位到可验证工程对象。", definitionList([
+      { label: "公开仓库", value: project.url }, { label: "版本/分支", value: project.sourceRef || "main" }, { label: "快照日期", value: project.snapshotDate || "待核验" }, { label: "语言与许可", value: project.language + " · " + project.license }, { label: "对应技术单元", value: node ? node.name : project.node }, { label: "工程利用判断", value: project.reuse }
+    ])));
+    var capabilities = el("div", "rest-repo-capabilities"); (project.capabilities || [node ? node.name : "项目核心能力"]).forEach(function (item) { capabilities.appendChild(badge(item)); });
+    var capabilityBody = el("div"); capabilityBody.appendChild(capabilities); capabilityBody.appendChild(el("p", "rest-repo-note", project.extractionAdvice || project.note));
+    overview.appendChild(section("可提取能力", "用于形成最小验证目标与适配边界。", capabilityBody));
+    panel.appendChild(overview);
+
+    var fileWrap = el("div", "rest-param-table-wrap");
+    var fileTable = el("table", "rest-param-table");
+    fileTable.innerHTML = "<thead><tr><th>文件/目录</th><th>内容说明</th><th>验证用途</th></tr></thead>";
+    var fileBody = el("tbody");
+    (project.files || []).forEach(function (item) { var row = el("tr"); row.appendChild(el("td", "", item[0])); row.appendChild(el("td", "", item[1])); row.appendChild(el("td", "", item[2])); fileBody.appendChild(row); });
+    fileTable.appendChild(fileBody); fileWrap.appendChild(fileTable);
+    panel.appendChild(section("文件与代码入口", "目录来自公开仓库快照，用于定位构建入口、核心机制和测试证据。", fileWrap));
+
+    var architecture = el("div", "rest-repo-architecture");
+    var flow = el("div", "rest-repo-architecture__flow");
+    ((project.architecture && project.architecture.flow) || []).forEach(function (item, index) { if (index) flow.appendChild(el("i", "", "→")); var card = el("div"); card.appendChild(el("strong", "", item[0])); card.appendChild(el("span", "", item[1])); flow.appendChild(card); });
+    architecture.appendChild(flow);
+    var notes = el("div", "rest-repo-architecture__notes");
+    ((project.architecture && project.architecture.notes) || []).forEach(function (item) { var card = el("div"); card.appendChild(el("span", "", item[0])); card.appendChild(el("p", "", item[1])); notes.appendChild(card); });
+    architecture.appendChild(notes);
+    panel.appendChild(section("代码架构与调用链", "从入口、核心处理到运行适配，明确可复用部分和替换边界。", architecture));
+
+    var checklist = el("div", "intel-card-list");
+    [["01 基线复现", "按仓库文档运行最小样例，记录依赖、启动方式和默认行为。"], ["02 机制提取", "围绕“" + (node ? node.name : "目标能力") + "”定位核心模块和调用链。"], ["03 场景适配", "替换接口、消息格式、数据模型和资源约束，接入离线验证环境。"], ["04 结果核验", "记录成功率、恢复时间、资源占用与异常边界，回写可信度。"]].forEach(function (item) { var card = el("article", "intel-list-card"); card.appendChild(el("strong", "", item[0])); card.appendChild(el("p", "", item[1])); checklist.appendChild(card); });
+    var exportLink = downloadLink("导出项目验证参数包", "validation_package_" + project.id + ".json", JSON.stringify(packageData, null, 2), "application/json;charset=utf-8");
+    panel.appendChild(section("建议验证步骤", "形成可以继续交给验证环境的项目级输入。", checklist, exportLink));
+    mount.replaceChildren(panel);
   }
 
   function parameterDrawer(parameter) {
@@ -933,6 +1070,19 @@
   }
 
   function renderParameters(mount) {
+    var context = readContext();
+    var selectedProject = findProject(context.project);
+    if (selectedProject) { renderProjectPackage(mount, selectedProject); return; }
+    var emptyPanel = el("div", "rest-param-page");
+    emptyPanel.appendChild(contextBar("parameters"));
+    var empty = el("section", "intel-section rest-project-package-empty");
+    empty.appendChild(el("h2", "", "请先选择一个开源项目"));
+    empty.appendChild(el("p", "", "仿真验证参数包按项目生成，内容包括项目概览、真实文件与代码入口、架构、可信度、活跃度、可提取能力和建议验证步骤。"));
+    empty.appendChild(button("进入开源项目索引矩阵", "primary", function () { goToTab("opensource", {}); }));
+    emptyPanel.appendChild(empty);
+    mount.replaceChildren(emptyPanel);
+    return;
+    /* 以下旧版通用参数视图保留在文件中，仅用于兼容历史数据，不再作为主演示入口。 */
     var panel = el("div", "rest-param-page");
     var state = runtime.parameters;
     var steps = ["证据解析智能体", "参数抽取智能体", "标准化智能体", "冲突检测智能体", "校准智能体", "发布智能体"];
@@ -1012,12 +1162,20 @@
   }
 
   function openProjectById(projectId) {
-    var project = data.opensource_projects.find(function (item) { return item.id === projectId; });
+    var project = findProject(projectId);
     if (!project) return false;
     projectDrawer(project);
     return true;
   }
 
+  function deactivate() {
+    Object.keys(runtime).forEach(function (key) {
+      if (runtime[key].timer) window.clearInterval(runtime[key].timer);
+      runtime[key].timer = null;
+      runtime[key].running = false;
+    });
+  }
+
   window.PlatformModules = window.PlatformModules || {};
-  window.PlatformModules.restorationAnalysis = { render: render, openProjectById: openProjectById };
+  window.PlatformModules.restorationAnalysis = { render: render, openProjectById: openProjectById, deactivate: deactivate };
 }());

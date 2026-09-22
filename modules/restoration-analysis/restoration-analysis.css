@@ -765,3 +765,30 @@
   .rest-os-panel__actions { flex-wrap: wrap; }
   .rest-os-tree__footer { grid-template-columns: 1fr; }
 }
+
+.rest-flow-context {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 16px 20px;
+  border: 1px solid #cddded;
+  border-left: 4px solid #3b78bb;
+  border-radius: 10px;
+  background: #f4f8fd;
+}
+.rest-flow-context__copy { min-width: 0; }
+.rest-flow-context__copy strong { color: #1f4368; font-size: 15px; }
+.rest-flow-context__copy p { margin: 6px 0; color: #40546a; font-size: 13px; line-height: 1.6; }
+.rest-flow-context__copy small { display: block; color: #68798b; line-height: 1.6; }
+.rest-flow-context__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.rest-flow-context > .rest-flow-context__actions { flex-shrink: 0; max-width: 330px; }
+.rest-repo-business-actions { margin: 12px 0; }
+.rest-project-package .intel-section { margin-top: 16px; }
+.rest-project-package-empty { padding: 40px; text-align: center; }
+.rest-project-package-empty p { max-width: 720px; margin: 12px auto 20px; color: #5d6f82; line-height: 1.8; }
+
+@media (max-width: 1050px) {
+  .rest-flow-context { align-items: flex-start; flex-direction: column; }
+  .rest-flow-context > .rest-flow-context__actions { max-width: none; }
+}
