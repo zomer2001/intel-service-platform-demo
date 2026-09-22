@@ -905,6 +905,7 @@
     var workspace = el("div", "intel-route-workspace");
     var chartColumn = el("div", "intel-route-chart-column");
     var legend = el("div", "intel-route-legend");
+    legend.appendChild(el("span", "intel-route-legend__title", "路线筛选"));
     var typeLegend = el("div", "intel-route-type-legend");
     var viewport = el("div", "intel-route-svg-viewport");
     var svg = svgElement("svg", "intel-route-svg", { viewBox: "0 0 1460 640", role: "img", "aria-label": "关键技术路线演化折线图" });
@@ -935,7 +936,7 @@
     });
     chartColumn.appendChild(typeLegend);
     chartColumn.appendChild(viewport);
-    var chartNote = el("p", "intel-route-chart-note", "纵轴只表示技术代际，同代节点严格等高；同一时点的节点仅在横向错开。灰色分支表示通用研究或公共技术对路线的推动关系，不代表Lattice实际采用；只有靶心节点可进入成熟度分析。");
+    var chartNote = el("p", "intel-route-chart-note", "点击上方路线可单独查看该路线及其相关通用技术，点击“全部路线”恢复技术树全景。纵轴只表示技术代际，同代节点严格等高；同一时点的节点仅在横向错开。灰色分支表示通用研究或公共技术对路线的推动关系，不代表Lattice实际采用；只有靶心节点可进入成熟度分析。");
     chartColumn.appendChild(chartNote);
     var detail = el("aside", "intel-route-detail intel-detail-panel");
     workspace.appendChild(chartColumn);
@@ -1052,7 +1053,20 @@
     }
 
     var routeGroups = {};
+    var routeControls = {};
+    var commonPointControls = {};
     var activeRoutes = {};
+    var allRoutesControl = el("button", "intel-route-legend__item intel-route-legend__item--all");
+    allRoutesControl.type = "button";
+    allRoutesControl.setAttribute("aria-pressed", "true");
+    allRoutesControl.title = "显示全部技术路线";
+    allRoutesControl.appendChild(el("i"));
+    allRoutesControl.appendChild(document.createTextNode("全部路线"));
+    allRoutesControl.addEventListener("click", function () {
+      stopPlayback();
+      setRouteFilter(null, false);
+    });
+    legend.appendChild(allRoutesControl);
     routeDefinitions.forEach(function (route) {
       activeRoutes[route.id] = true;
       var seriesNodes = routeNodes.filter(function (node) { return node.route.id === route.id; }).sort(function (a, b) { return a.timeValue - b.timeValue; });
@@ -1071,27 +1085,58 @@
 
       var control = el("button", "intel-route-legend__item");
       control.type = "button";
-      control.setAttribute("aria-pressed", "true");
+      control.setAttribute("aria-pressed", "false");
+      control.title = "只看“" + route.name + "”路线";
+      control.style.setProperty("--route-color", route.color);
       var dot = el("i"); dot.style.background = route.color;
       control.appendChild(dot);
       control.appendChild(document.createTextNode(route.name));
       if (route.focus_branch) control.appendChild(el("small", "", "研究分支"));
       control.addEventListener("click", function () {
-        var enabledCount = Object.keys(activeRoutes).filter(function (id) { return activeRoutes[id]; }).length;
-        if (activeRoutes[route.id] && enabledCount === 1) return;
-        activeRoutes[route.id] = !activeRoutes[route.id];
-        control.setAttribute("aria-pressed", activeRoutes[route.id] ? "true" : "false");
-        routeGroups[route.id].line.hidden = !activeRoutes[route.id];
-        routeGroups[route.id].points.forEach(function (point) { point.hidden = !activeRoutes[route.id]; });
-        drawRelations(selectedNode);
+        stopPlayback();
+        setRouteFilter(route.id, true);
       });
+      routeControls[route.id] = control;
       legend.appendChild(control);
     });
-    commonNodes.forEach(function (node) { createPoint(node, commonRoute); });
+    commonNodes.forEach(function (node) { commonPointControls[node.route_id] = createPoint(node, commonRoute); });
 
     var showRelations = true;
     var selectedNode = null;
     var playbackTimer = null;
+
+    function setRouteFilter(routeId, focusRoute) {
+      var showAll = !routeId || !routeGroups[routeId];
+      legend.classList.toggle("is-filtered", !showAll);
+      allRoutesControl.setAttribute("aria-pressed", showAll ? "true" : "false");
+      Object.keys(routeGroups).forEach(function (id) {
+        var visible = showAll || id === routeId;
+        activeRoutes[id] = visible;
+        routeGroups[id].line.hidden = !visible;
+        routeGroups[id].points.forEach(function (point) { point.hidden = !visible; });
+        if (routeControls[id]) routeControls[id].setAttribute("aria-pressed", !showAll && id === routeId ? "true" : "false");
+      });
+      Array.prototype.forEach.call(branchLayer.querySelectorAll(".intel-route-tree-branch"), function (path) {
+        var target = pointCoordinates[path.dataset.target];
+        path.hidden = !showAll && (!target || target.node.route.id !== routeId);
+      });
+      Object.keys(commonPointControls).forEach(function (commonId) {
+        var supportsSelectedRoute = branchRelations.some(function (relation) {
+          var target = pointCoordinates[relation.target];
+          return relation.source === commonId && target && target.node.route.id === routeId;
+        });
+        commonPointControls[commonId].hidden = !showAll && !supportsSelectedRoute;
+      });
+      if (!showAll && focusRoute !== false) {
+        var candidates = routeNodes.filter(function (node) { return node.route.id === routeId; }).sort(function (a, b) { return a.timeValue - b.timeValue; });
+        var targetNode = candidates.find(function (node) { return node.is_key_maturity; }) || candidates[candidates.length - 1];
+        var targetControl = targetNode ? pointLayer.querySelector('[data-node="' + targetNode.route_id + '"]') : null;
+        if (targetNode && targetControl) selectNode(targetNode, targetControl);
+      } else {
+        drawRelations(selectedNode);
+      }
+    }
+
     function setFocusInUrl(nodeId) {
       try {
         var url = new URL(window.location.href);
@@ -1317,9 +1362,7 @@
 
     function playEvolution() {
       stopPlayback();
-      Object.keys(activeRoutes).forEach(function (id) { activeRoutes[id] = true; });
-      legend.querySelectorAll("button").forEach(function (control) { control.setAttribute("aria-pressed", "true"); });
-      Object.keys(routeGroups).forEach(function (id) { routeGroups[id].line.hidden = false; routeGroups[id].points.forEach(function (point) { point.hidden = false; }); });
+      setRouteFilter(null, false);
       var ordered = nodes.slice().sort(function (a, b) { return a.timeValue - b.timeValue || a.阶段 - b.阶段; });
       var index = 0;
       playButton.disabled = true;
