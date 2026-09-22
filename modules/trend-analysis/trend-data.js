@@ -499,10 +499,66 @@
       }
     ],
     "node_overrides": {
-      "R017": { "evidence_level": "高", "maturity_dimension": "resilient-network", "evidence_type": "专利", "evidence_label": "US10506436B1：Lattice mesh", "evidence_url": "https://patents.google.com/patent/US10506436B1/en" },
-      "R018": { "evidence_level": "中高", "maturity_dimension": "core-network", "evidence_type": "体系演示", "evidence_label": "早期 Lattice 体系数据融合与连接演示" },
-      "R019": { "evidence_level": "高", "maturity_dimension": "resilient-network", "evidence_type": "多站点演示", "evidence_label": "Anduril：Space Surveillance Network 数据传输韧性", "evidence_url": "https://www.anduril.com/news/anduril-delivers-commercial-data-transport-resilience-to-space-surveillance-network" },
-      "R020": { "evidence_level": "高", "maturity_dimension": "resilient-network", "evidence_type": "真实任务事件", "evidence_label": "Maui GEODSS 通信恢复公开材料" },
+      "R017": {
+        "evidence_level": "高",
+        "maturity_dimension": "resilient-network",
+        "evidence_type": "专利",
+        "evidence_label": "US10506436B1 · Lattice mesh",
+        "evidence_publisher": "Google Patents / USPTO 元数据",
+        "evidence_date": "优先权 2018-06-11 · 授权公开 2019-12-10",
+        "evidence_summary": "专利公开了一种网格节点注册与可信接入机制：主机携带密钥和资产标识完成注册，由注册机构签发证书，随后更新资产数据库，并将编码后的消息发送或发布到网络节点。",
+        "evidence_supports": "支持“Lattice Mesh 在早期已形成去中心化节点接入、身份授权、资产登记与消息发布”等架构原理判断。",
+        "evidence_boundary": "专利权利要求用于证明架构思想和技术主张的存在，不等同于证明当时已经规模部署，也不能单独证明实际性能或完整产品实现。",
+        "evidence_url": "https://patents.google.com/patent/US10506436B1/en"
+      },
+      "R021": {
+        "evidence_level": "中高",
+        "maturity_dimension": "resilient-network",
+        "evidence_type": "方案发布",
+        "evidence_label": "Resilient Networking Keeps Critical Sensors Connected",
+        "evidence_publisher": "AMOS Conference · Anduril / U.S. Space Force",
+        "evidence_date": "首次提出 2019 · 回溯材料 2023",
+        "evidence_summary": "AMOS 公开论文回溯说明，这项韧性网络工作最初在 2019 年 Space Pitch Day 提出，目标是为关键空间监视传感器提供多路径、可快速恢复的数据连接。",
+        "evidence_supports": "支持“专利中的 Mesh 原理在 2019 年进入面向空间监视任务的方案化阶段”的判断。",
+        "evidence_boundary": "该日期来自后续会议论文的回溯性陈述，能够说明方案提出时间，但不等同于当年完成产品部署或验收。",
+        "evidence_url": "https://amostech.com/TechnicalPapers/2023/Poster/Pruden.pdf"
+      },
+      "R018": {
+        "evidence_level": "高",
+        "maturity_dimension": "core-network",
+        "evidence_type": "多站点演示",
+        "evidence_label": "Resilient Networking Keeps Critical Sensors Connected",
+        "evidence_publisher": "AMOS Conference · Anduril / U.S. Space Force",
+        "evidence_date": "演示 2022-11 · 论文 2023",
+        "evidence_summary": "Space Surveillance Network 多站点演示接入不同遗留任务系统，通过 NFS、TCP/IP 与专有信号接口交换任务、观测和星表更新，并向 Unified Data Library 发布数据。",
+        "evidence_supports": "支持“异构任务数据已能被接入、透明分发并向统一数据环境汇聚”的工程验证判断。",
+        "evidence_boundary": "会议论文和参与方材料能够证明演示范围，但不等同于通用数据标准已经覆盖全部系统，也不是第三方独立性能测评。",
+        "evidence_url": "https://amostech.com/TechnicalPapers/2023/Poster/Pruden.pdf"
+      },
+      "R019": {
+        "evidence_level": "高",
+        "maturity_dimension": "resilient-network",
+        "evidence_type": "多站点演示",
+        "evidence_label": "Resilient Networking Keeps Critical Sensors Connected",
+        "evidence_publisher": "AMOS Conference · Anduril / U.S. Space Force",
+        "evidence_date": "演示 2022-11 · 论文 2023",
+        "evidence_summary": "演示跨接 Maui GEODSS、Eglin 和 Dahlgren 等站点，在商业卫星通信与国防网络之间传送双向遗留任务数据；Flux 节点维护连通关系图并自动计算下一跳。",
+        "evidence_supports": "支持“Mesh 已从架构原理进入多站点、多链路、双向任务数据传输验证”的判断。",
+        "evidence_boundary": "材料由项目参与方发布，可证明演示环境和能力范围，但不应外推为所有复杂对抗环境下的性能结论。",
+        "evidence_url": "https://amostech.com/TechnicalPapers/2023/Poster/Pruden.pdf"
+      },
+      "R020": {
+        "evidence_level": "高",
+        "maturity_dimension": "resilient-network",
+        "evidence_type": "任务运行",
+        "evidence_label": "Maui GEODSS 风暴断链恢复记录",
+        "evidence_publisher": "AMOS Conference · Anduril / U.S. Space Force",
+        "evidence_date": "事件 2022-12-19 · 论文 2023",
+        "evidence_summary": "公开材料称，风暴导致 Maui GEODSS 传统通信中断后，Flux 在 24 小时内恢复双向任务通信，并连续 21 天承担主要运行通信链路。",
+        "evidence_supports": "支持“边缘节点与替代链路能够在真实中断事件中恢复任务连接、维持业务连续性”的判断。",
+        "evidence_boundary": "该记录反映一次特定站点和链路条件下的任务运行，不代表所有部署场景均可达到相同恢复时间。",
+        "evidence_url": "https://amostech.com/TechnicalPapers/2023/Poster/Pruden.pdf"
+      },
       "R001": { "阶段": 2, "evidence_level": "中高", "maturity_dimension": "resilient-network" },
       "R002": { "阶段": 3, "evidence_level": "高", "maturity_dimension": "scale" },
       "R003": { "阶段": 3, "evidence_level": "高", "maturity_dimension": "scale" },
@@ -521,7 +577,8 @@
       "R016": { "阶段": 4, "evidence_level": "中高", "maturity_dimension": "ecosystem", "is_new": true }
     },
     "relations": [
-      { "source": "R017", "target": "R019", "type": "原理到验证", "description": "去中心化连接与发布订阅原理进入多站点任务数据传输验证。" },
+      { "source": "R017", "target": "R021", "type": "原理到方案", "description": "专利中的去中心化连接与可信接入原理进入面向空间监视任务的韧性网络方案。" },
+      { "source": "R021", "target": "R019", "type": "方案到验证", "description": "2019年提出的韧性网络方案在2022年进入多站点任务数据传输验证。" },
       { "source": "R019", "target": "R001", "type": "任务经验产品化", "description": "多站点与应急通信经验继续演化为面向边缘环境的数据Mesh能力。" },
       { "source": "R018", "target": "R005", "type": "融合能力演进", "description": "早期体系数据融合逐步演化为异构数据转换与共同数据层。" },
       { "source": "R004", "target": "R007", "type": "汇聚支撑", "description": "边云数据网为共同数据层提供网络底座。" },
@@ -544,23 +601,34 @@
       "数据属性": "公开专利+归纳"
     },
     {
+      "route_id": "R021",
+      "技术路线": "分布式网络",
+      "阶段": 1,
+      "时间": "2019",
+      "节点名称": "Space Pitch Day 韧性网络方案",
+      "节点说明": "将 Mesh 原理面向关键空间监视传感器的多路径连接与快速恢复需求进行方案化。",
+      "关联事件": "",
+      "节点状态": "方案提出",
+      "数据属性": "公开事实+归纳"
+    },
+    {
       "route_id": "R018",
       "技术路线": "数据处理",
       "阶段": 1,
-      "时间": "2020",
-      "节点名称": "体系级数据融合演示",
-      "节点说明": "早期 Lattice 演示验证跨传感器数据汇聚、识别与任务协同。",
+      "时间": "2022-11",
+      "节点名称": "遗留任务数据透明接入",
+      "节点说明": "多站点演示验证异构任务接口接入、透明分发与统一数据环境发布。",
       "关联事件": "",
-      "节点状态": "体系演示",
-      "数据属性": "公开线索+归纳"
+      "节点状态": "多站点演示",
+      "数据属性": "公开事实+归纳"
     },
     {
       "route_id": "R019",
       "技术路线": "分布式网络",
       "阶段": 2,
-      "时间": "2022",
-      "节点名称": "SSN 多站点 Mesh 传输",
-      "节点说明": "在商业卫星通信与国防网络之间开展多站点双向任务数据传输。",
+      "时间": "2022-11",
+      "节点名称": "SSN 多站点 Mesh 与自动选路",
+      "节点说明": "在商业卫星通信与国防网络之间开展多站点双向任务数据传输，并自动计算下一跳。",
       "关联事件": "",
       "节点状态": "相关环境验证",
       "数据属性": "公开事实+归纳"
