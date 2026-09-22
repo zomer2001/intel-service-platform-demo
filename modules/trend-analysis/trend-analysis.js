@@ -818,9 +818,17 @@
     var routeMap = {};
     routeDefinitions.forEach(function (route, index) {
       route.color = route.color || palette[index % palette.length];
-      route.chartOffset = (index - ((routeDefinitions.length - 1) / 2)) * 32;
+      route.order = index;
       routeMap[route.name] = route;
     });
+    var commonRoute = {
+      id: "common-foundation",
+      name: "通用研究与公共技术",
+      color: "#7b8a9a",
+      service: "提供可被多条技术路线吸收的公共研究、标准与工程方法。",
+      technology: "公开论文、开放标准与通用开源技术；仅表示推动关系，不代表目标产品采用。",
+      maturity_dimension: ""
+    };
 
     function parseTime(value) {
       var values = [];
@@ -838,7 +846,7 @@
       return month === 1 ? String(year) : year + "-" + String(month).padStart(2, "0");
     }
 
-    var nodes = data.route_evolution.map(function (node) {
+    var routeNodes = data.route_evolution.map(function (node) {
       var route = routeMap[node.技术路线];
       var detail = overrides[node.route_id] || {};
       return Object.assign({}, node, detail, {
@@ -847,10 +855,34 @@
         maturityDimension: detail.maturity_dimension || route.maturity_dimension
       });
     });
+    var commonNodes = (chartConfig.common_nodes || []).map(function (node) {
+      return Object.assign({}, node, {
+        route: commonRoute,
+        node_kind: "common",
+        timeValue: Number(node.time_value) || parseTime(node.时间),
+        maturityDimension: ""
+      });
+    });
+    var nodes = routeNodes.concat(commonNodes);
+    var branchRelations = chartConfig.branch_relations || [];
     var timelineSlots = Array.from(new Set(nodes.map(function (node) { return node.timeValue; }))).sort(function (a, b) { return a - b; });
     var slotLabels = {};
     nodes.slice().sort(function (a, b) { return a.timeValue - b.timeValue; }).forEach(function (node) {
       if (!slotLabels[node.timeValue]) slotLabels[node.timeValue] = node.时间;
+    });
+    var collisionGroups = {};
+    nodes.forEach(function (node) {
+      var key = node.timeValue + "|" + Number(node.阶段);
+      collisionGroups[key] = collisionGroups[key] || [];
+      collisionGroups[key].push(node);
+    });
+    Object.keys(collisionGroups).forEach(function (key) {
+      var group = collisionGroups[key].sort(function (a, b) {
+        var aOrder = a.node_kind === "common" ? -1 : a.route.order;
+        var bOrder = b.node_kind === "common" ? -1 : b.route.order;
+        return aOrder - bOrder;
+      });
+      group.forEach(function (node, index) { node.chartXOffset = (index - ((group.length - 1) / 2)) * 34; });
     });
     var minStage = Math.min.apply(null, stages.map(function (stage) { return stage.value; }));
     var maxStage = Math.max.apply(null, stages.map(function (stage) { return stage.value; }));
@@ -858,9 +890,9 @@
 
     panel.appendChild(metrics([
       { label: "技术路线", value: routeDefinitions.length + " 条" },
-      { label: "路线节点", value: data.route_evolution.length },
-      { label: "跨路线关系", value: relations.length + " 组" },
-      { label: "时间跨度", value: "2018—2026" }
+      { label: "技术树节点", value: nodes.length + "（通用" + commonNodes.length + "）" },
+      { label: "分支推动关系", value: branchRelations.length + " 组" },
+      { label: "时间跨度", value: "2015—当前" }
     ]));
 
     var actions = el("div", "intel-route-actions");
@@ -883,17 +915,19 @@
     svg.appendChild(defs);
     var bandLayer = svgElement("g", "intel-route-bands");
     var gridLayer = svgElement("g", "intel-route-grid");
+    var branchLayer = svgElement("g", "intel-route-tree-branches");
     var relationLayer = svgElement("g", "intel-route-relations");
     var lineLayer = svgElement("g", "intel-route-lines");
     var pointLayer = svgElement("g", "intel-route-points");
     svg.appendChild(bandLayer);
     svg.appendChild(gridLayer);
+    svg.appendChild(branchLayer);
     svg.appendChild(relationLayer);
     svg.appendChild(lineLayer);
     svg.appendChild(pointLayer);
     viewport.appendChild(svg);
     chartColumn.appendChild(legend);
-    [["专利 / 原理", "diamond"], ["测试 / 演示", "square"], ["任务运行 / 部署", "circle"], ["产品 / 生态", "hexagon"]].forEach(function (entry) {
+    [["通用研究 / 公共技术", "common"], ["路线里程碑", "milestone"], ["研究对象 / 可进入成熟度", "focus"], ["专利 / 原理", "diamond"], ["测试 / 演示", "square"]].forEach(function (entry) {
       var item = el("span", "intel-route-type-legend__item");
       item.appendChild(el("i", "intel-route-type-legend__shape intel-route-type-legend__shape--" + entry[1]));
       item.appendChild(document.createTextNode(entry[0]));
@@ -901,7 +935,7 @@
     });
     chartColumn.appendChild(typeLegend);
     chartColumn.appendChild(viewport);
-    var chartNote = el("p", "intel-route-chart-note", "横轴按里程碑顺序等距排列，日期不按真实时长缩放；实线表示同一路线演化，虚线展示当前节点的跨路线支撑关系。外圈表示证据较充分，脉冲表示本期新增。");
+    var chartNote = el("p", "intel-route-chart-note", "纵轴只表示技术代际，同代节点严格等高；同一时点的节点仅在横向错开。灰色分支表示通用研究或公共技术对路线的推动关系，不代表Lattice实际采用；只有靶心节点可进入成熟度分析。");
     chartColumn.appendChild(chartNote);
     var detail = el("aside", "intel-route-detail intel-detail-panel");
     workspace.appendChild(chartColumn);
@@ -910,14 +944,14 @@
     var left = 178;
     var right = 62;
     var top = 120;
-    var bottom = 92;
+    var bottom = 112;
     var width = 1460;
     var height = 640;
     function xFor(node) {
       var slotIndex = timelineSlots.indexOf(node.timeValue);
-      return left + (slotIndex / Math.max(1, timelineSlots.length - 1)) * (width - left - right);
+      return left + (slotIndex / Math.max(1, timelineSlots.length - 1)) * (width - left - right) + (node.chartXOffset || 0);
     }
-    function yFor(node) { return height - bottom - ((Number(node.阶段) - minStage) / (maxStage - minStage)) * (height - top - bottom) + node.route.chartOffset; }
+    function yFor(node) { return height - bottom - ((Number(node.阶段) - minStage) / (maxStage - minStage)) * (height - top - bottom); }
     var pointCoordinates = {};
     nodes.forEach(function (node) { pointCoordinates[node.route_id] = { x: xFor(node), y: yFor(node), node: node }; });
 
@@ -934,12 +968,29 @@
       var tickX = left + (tick / Math.max(1, timelineSlots.length - 1)) * (width - left - right);
       gridLayer.appendChild(svgElement("line", "intel-route-grid__tick", { x1: tickX, y1: top, x2: tickX, y2: height - bottom }));
       gridLayer.appendChild(svgElement("circle", "intel-route-grid__tick-dot", { cx: tickX, cy: height - bottom, r: "3" }));
-      gridLayer.appendChild(svgElement("text", "intel-route-grid__time", { x: tickX, y: height - 48, "text-anchor": "middle" }, slotLabels[tickValue] || formatTime(tickValue)));
+      gridLayer.appendChild(svgElement("text", "intel-route-grid__time", { x: tickX, y: height - 58 + ((tick % 2) * 18), "text-anchor": "middle" }, slotLabels[tickValue] || formatTime(tickValue)));
     });
     gridLayer.appendChild(svgElement("text", "intel-route-grid__axis-title", { x: 22, y: 30 }, "技术代际 / 架构范式"));
     gridLayer.appendChild(svgElement("text", "intel-route-grid__axis-title", { x: width - right, y: height - 16, "text-anchor": "end" }, "里程碑顺序（日期非等比例）"));
 
+    branchRelations.forEach(function (relation) {
+      var source = pointCoordinates[relation.source];
+      var target = pointCoordinates[relation.target];
+      if (!source || !target) return;
+      var middleX = source.x + ((target.x - source.x) * .54);
+      var path = svgElement("path", "intel-route-tree-branch", {
+        d: "M" + source.x + " " + source.y + " C" + middleX + " " + source.y + " " + middleX + " " + target.y + " " + target.x + " " + target.y,
+        fill: "none"
+      });
+      path.dataset.source = relation.source;
+      path.dataset.target = relation.target;
+      path.appendChild(svgElement("title", "", {}, relation.type + "｜通用技术推动关系，不代表产品采用"));
+      branchLayer.appendChild(path);
+    });
+
     function evidenceShape(node) {
+      if (node.node_kind === "common") return "common";
+      if (node.is_key_maturity) return "focus";
       var type = String(node.evidence_type || node.节点状态 || "");
       if (type.indexOf("专利") >= 0 || type.indexOf("原理") >= 0) return "diamond";
       if (type.indexOf("演示") >= 0 || type.indexOf("验证") >= 0 || type.indexOf("测试") >= 0) return "square";
@@ -951,7 +1002,13 @@
       var filled = node.节点状态.indexOf("验证") >= 0 || Number(node.阶段) >= 3 || node.evidence_level === "高";
       var attrs = { fill: filled ? route.color : "#fff", stroke: route.color, "stroke-width": "4" };
       var shape = evidenceShape(node);
-      if (shape === "diamond") {
+      if (shape === "common") {
+        point.appendChild(svgElement("circle", "intel-route-point__symbol intel-route-point__symbol--common", { r: "6", fill: "#fff", stroke: route.color, "stroke-width": "3" }));
+      } else if (shape === "focus") {
+        point.appendChild(svgElement("circle", "intel-route-point__focus-halo", { r: "17", fill: "none", stroke: route.color, "stroke-width": "3" }));
+        point.appendChild(svgElement("circle", "intel-route-point__symbol intel-route-point__symbol--focus", { r: "10", fill: route.color, stroke: "#fff", "stroke-width": "3" }));
+        point.appendChild(svgElement("circle", "intel-route-point__focus-core", { r: "3", fill: "#fff" }));
+      } else if (shape === "diamond") {
         attrs.points = "0,-9 9,0 0,9 -9,0";
         point.appendChild(svgElement("polygon", "intel-route-point__symbol", attrs));
       } else if (shape === "square") {
@@ -966,41 +1023,49 @@
       }
     }
 
+    function createPoint(node, route) {
+      var modifier = node.node_kind === "common" ? " intel-route-point--common" : (node.is_key_maturity ? " intel-route-point--focus" : " intel-route-point--milestone");
+      var point = svgElement("g", "intel-route-point" + modifier, { role: "button", tabindex: "0", "aria-label": route.name + "，" + node.节点名称 + "，" + node.时间 });
+      point.dataset.node = node.route_id;
+      point.dataset.route = route.id;
+      point.setAttribute("transform", "translate(" + xFor(node) + " " + yFor(node) + ")");
+      if (node.evidence_level === "高" && node.node_kind !== "common" && !node.is_key_maturity) point.appendChild(svgElement("circle", "intel-route-point__evidence", { r: "13", fill: "none", stroke: route.color }));
+      if (node.is_new) point.appendChild(svgElement("circle", "intel-route-point__pulse", { r: "18", fill: "none", stroke: route.color }));
+      point.appendChild(svgElement("circle", "intel-route-point__hit", { r: node.is_key_maturity ? "26" : "20", fill: "transparent" }));
+      appendNodeSymbol(point, node, route);
+      point.appendChild(svgElement("text", "intel-route-point__time", { y: "-18", "text-anchor": "middle", fill: route.color }, node.时间));
+      var shortTitle = node.节点名称.length > 22 ? node.节点名称.slice(0, 21) + "…" : node.节点名称;
+      var labelWidth = Math.max(174, Math.min(280, shortTitle.length * 12 + 28));
+      var labelOffset = Number(node.阶段) >= maxStage ? 52 : -54;
+      var absoluteX = xFor(node);
+      var labelShiftX = absoluteX + (labelWidth / 2) > width - 8 ? (width - 8 - absoluteX - (labelWidth / 2)) : (absoluteX - (labelWidth / 2) < 8 ? (8 - absoluteX + (labelWidth / 2)) : 0);
+      var selectedLabel = svgElement("g", "intel-route-point__label", { transform: "translate(" + labelShiftX + " " + labelOffset + ")" });
+      selectedLabel.appendChild(svgElement("rect", "", { x: -labelWidth / 2, y: "-22", width: labelWidth, height: "44", rx: "8", fill: "#fff", stroke: route.color, "stroke-width": "1.5" }));
+      selectedLabel.appendChild(svgElement("text", "intel-route-point__label-type", { y: "-6", "text-anchor": "middle", fill: route.color }, (node.is_key_maturity ? "成熟度分析对象" : (node.evidence_type || node.节点状态)) + " · " + node.时间));
+      selectedLabel.appendChild(svgElement("text", "intel-route-point__label-title", { y: "12", "text-anchor": "middle", fill: "#203b53" }, shortTitle));
+      point.appendChild(selectedLabel);
+      point.appendChild(svgElement("title", "", {}, node.节点名称 + "｜" + node.节点说明));
+      point.addEventListener("click", function () { stopPlayback(); selectNode(node, point); });
+      point.addEventListener("keydown", function (event) { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); stopPlayback(); selectNode(node, point); } });
+      pointLayer.appendChild(point);
+      return point;
+    }
+
     var routeGroups = {};
     var activeRoutes = {};
     routeDefinitions.forEach(function (route) {
       activeRoutes[route.id] = true;
-      var routeNodes = nodes.filter(function (node) { return node.route.id === route.id; }).sort(function (a, b) { return a.timeValue - b.timeValue; });
-      if (!routeNodes.length) return;
+      var seriesNodes = routeNodes.filter(function (node) { return node.route.id === route.id; }).sort(function (a, b) { return a.timeValue - b.timeValue; });
+      if (!seriesNodes.length) return;
       var group = svgElement("g", "intel-route-series");
       group.dataset.route = route.id;
-      var pathData = routeNodes.map(function (node, index) { return (index ? "L" : "M") + xFor(node) + " " + yFor(node); }).join(" ");
-      group.appendChild(svgElement("path", "intel-route-series__path", { d: pathData, fill: "none", stroke: route.color, "stroke-width": "4", "stroke-linecap": "round", "stroke-linejoin": "round" }));
+      var pathData = seriesNodes.map(function (node, index) { return (index ? "L" : "M") + xFor(node) + " " + yFor(node); }).join(" ");
+      group.appendChild(svgElement("path", "intel-route-series__path", { d: pathData, fill: "none", stroke: route.color, "stroke-width": route.focus_branch ? "5" : "3.5", "stroke-linecap": "round", "stroke-linejoin": "round" }));
       lineLayer.appendChild(group);
       routeGroups[route.id] = { line: group, points: [] };
 
-      routeNodes.forEach(function (node) {
-        var point = svgElement("g", "intel-route-point", { role: "button", tabindex: "0", "aria-label": node.技术路线 + "，" + node.节点名称 + "，" + node.时间 });
-        point.dataset.node = node.route_id;
-        point.dataset.route = route.id;
-        point.setAttribute("transform", "translate(" + xFor(node) + " " + yFor(node) + ")");
-        if (node.evidence_level === "高") point.appendChild(svgElement("circle", "intel-route-point__evidence", { r: "13", fill: "none", stroke: route.color }));
-        if (node.is_new) point.appendChild(svgElement("circle", "intel-route-point__pulse", { r: "18", fill: "none", stroke: route.color }));
-        point.appendChild(svgElement("circle", "intel-route-point__hit", { r: "20", fill: "transparent" }));
-        appendNodeSymbol(point, node, route);
-        point.appendChild(svgElement("text", "intel-route-point__time", { y: "-18", "text-anchor": "middle", fill: route.color }, node.时间));
-        var shortTitle = node.节点名称.length > 22 ? node.节点名称.slice(0, 21) + "…" : node.节点名称;
-        var labelWidth = Math.max(174, Math.min(264, shortTitle.length * 12 + 28));
-        var labelOffset = Number(node.阶段) >= maxStage ? 52 : -54;
-        var selectedLabel = svgElement("g", "intel-route-point__label", { transform: "translate(0 " + labelOffset + ")" });
-        selectedLabel.appendChild(svgElement("rect", "", { x: -labelWidth / 2, y: "-22", width: labelWidth, height: "44", rx: "8", fill: "#fff", stroke: route.color, "stroke-width": "1.5" }));
-        selectedLabel.appendChild(svgElement("text", "intel-route-point__label-type", { y: "-6", "text-anchor": "middle", fill: route.color }, (node.evidence_type || node.节点状态) + " · " + node.时间));
-        selectedLabel.appendChild(svgElement("text", "intel-route-point__label-title", { y: "12", "text-anchor": "middle", fill: "#203b53" }, shortTitle));
-        point.appendChild(selectedLabel);
-        point.appendChild(svgElement("title", "", {}, node.节点名称 + "｜" + node.节点说明));
-        point.addEventListener("click", function () { stopPlayback(); selectNode(node, point); });
-        point.addEventListener("keydown", function (event) { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); stopPlayback(); selectNode(node, point); } });
-        pointLayer.appendChild(point);
+      seriesNodes.forEach(function (node) {
+        var point = createPoint(node, route);
         routeGroups[route.id].points.push(point);
       });
 
@@ -1010,6 +1075,7 @@
       var dot = el("i"); dot.style.background = route.color;
       control.appendChild(dot);
       control.appendChild(document.createTextNode(route.name));
+      if (route.focus_branch) control.appendChild(el("small", "", "研究分支"));
       control.addEventListener("click", function () {
         var enabledCount = Object.keys(activeRoutes).filter(function (id) { return activeRoutes[id]; }).length;
         if (activeRoutes[route.id] && enabledCount === 1) return;
@@ -1021,6 +1087,7 @@
       });
       legend.appendChild(control);
     });
+    commonNodes.forEach(function (node) { createPoint(node, commonRoute); });
 
     var showRelations = true;
     var selectedNode = null;
@@ -1153,16 +1220,20 @@
     function selectNode(node, control, persistFocus) {
       selectedNode = node;
       pointLayer.querySelectorAll(".intel-route-point").forEach(function (item) { item.classList.toggle("is-selected", item === control); });
-      lineLayer.querySelectorAll(".intel-route-series").forEach(function (item) { item.classList.toggle("is-muted", item.dataset.route !== node.route.id); });
+      lineLayer.querySelectorAll(".intel-route-series").forEach(function (item) { item.classList.toggle("is-muted", node.node_kind !== "common" && item.dataset.route !== node.route.id); });
+      branchLayer.querySelectorAll(".intel-route-tree-branch").forEach(function (item) { item.classList.toggle("is-active", item.dataset.source === node.route_id || item.dataset.target === node.route_id); });
       var nodeRelations = relations.filter(function (relation) { return relation.source === node.route_id || relation.target === node.route_id; });
+      var nodeBranchRelations = branchRelations.filter(function (relation) { return relation.source === node.route_id || relation.target === node.route_id; });
       detail.replaceChildren();
-      detail.appendChild(el("span", "intel-kicker", node.技术路线 + " · " + node.时间));
+      detail.appendChild(el("span", "intel-kicker", (node.技术路线 || node.route.name) + " · " + node.时间));
       detail.appendChild(el("h3", "", node.节点名称));
       detail.appendChild(el("p", "", node.节点说明));
       var stageDefinition = stages.find(function (stage) { return stage.value === Number(node.阶段); }) || { label: "阶段 " + node.阶段 };
       var nodeEvidence = evidenceForNode(node);
       var badges = el("div", "intel-route-detail__badges");
       badges.appendChild(badge(node.节点状态));
+      if (node.node_kind === "common") badges.appendChild(badge("通用技术背景", "running"));
+      if (node.is_key_maturity) badges.appendChild(badge("成熟度分析对象", "success"));
       badges.appendChild(badge(nodeEvidence.type));
       badges.appendChild(badge("证据充分度 " + (node.evidence_level || "中高"), node.evidence_level === "高" ? "success" : "running"));
       badges.appendChild(badge(stageDefinition.label));
@@ -1198,16 +1269,29 @@
         });
         detail.appendChild(relationList);
       }
+      if (nodeBranchRelations.length) {
+        var branchList = el("div", "intel-route-detail__relations intel-route-detail__relations--tree");
+        branchList.appendChild(el("strong", "", "技术树分支关系"));
+        nodeBranchRelations.forEach(function (relation) {
+          var otherId = relation.source === node.route_id ? relation.target : relation.source;
+          var other = pointCoordinates[otherId] && pointCoordinates[otherId].node;
+          branchList.appendChild(el("p", "", relation.type + "｜" + (other ? other.节点名称 : otherId)));
+        });
+        branchList.appendChild(el("small", "", "分支线表示公共研究或通用技术对路线的推动作用，不表示目标产品已采用对应实现。"));
+        detail.appendChild(branchList);
+      }
       var links = el("div", "intel-route-detail__actions");
       String(node.关联事件 || "").split(";").filter(Boolean).forEach(function (eventId) {
         var event = findEvent(eventId);
         if (event) links.appendChild(button("查看事件 " + eventId, "secondary", function () { openEvent(event); }));
       });
-      var maturityLink = el("a", "button button--primary", "进入成熟度分析");
-      maturityLink.href = maturityUrl(node);
-      links.appendChild(maturityLink);
+      if (node.is_key_maturity) {
+        var maturityLink = el("a", "button button--primary", "进入该技术成熟度分析");
+        maturityLink.href = maturityUrl(node);
+        links.appendChild(maturityLink);
+      }
       detail.appendChild(links);
-      detail.appendChild(el("small", "intel-route-detail__note", "进入成熟度页后将自动定位到“" + node.route.name + "”对应的能力维度，并保留返回当前节点的入口。"));
+      detail.appendChild(el("small", "intel-route-detail__note", node.is_key_maturity ? "该靶心节点是本次研究对象；进入成熟度页后会高亮“核心组网与分布式数据连接能力”。" : "该节点用于解释技术来源、演进或分支推动关系，不单独进行成熟度评级；成熟度入口仅开放给靶心研究对象节点。"));
       drawRelations(node);
       if (persistFocus !== false) setFocusInUrl(node.route_id);
       window.setTimeout(function () {
@@ -1251,11 +1335,11 @@
       }, 720);
     }
 
-    var routeSection = section("关键技术路线演化图", "横轴按里程碑顺序展示技术迭代，纵轴表示架构代际；点击节点先看依据摘要，再进入成熟度分析。", workspace, actions);
+    var routeSection = section("关键技术树与路线演化图", "主干和分支共同展示通用研究、公共技术、路线里程碑与当前研究对象；同代等高、同刻横向错开。", workspace, actions);
     panel.appendChild(routeSection);
     var routeQuery = new URLSearchParams(window.location.search);
     var requestedFocus = routeQuery.get("route") || routeQuery.get("focus");
-    var initialNode = nodes.find(function (node) { return node.route_id === requestedFocus; }) || nodes.find(function (node) { return node.route_id === "R015"; }) || nodes[0];
+    var initialNode = nodes.find(function (node) { return node.route_id === requestedFocus; }) || nodes.find(function (node) { return node.route_id === "R022"; }) || nodes[0];
     var initialControl = pointLayer.querySelector('[data-node="' + initialNode.route_id + '"]');
     var routeTabRequested = (new URLSearchParams(window.location.search).get("tab") || "monitor") === "routes";
     if (initialNode && initialControl) selectNode(initialNode, initialControl, routeTabRequested);

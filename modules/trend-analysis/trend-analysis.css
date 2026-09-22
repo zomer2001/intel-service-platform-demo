@@ -1347,6 +1347,9 @@ button.intel-list-card:hover {
 .intel-route-type-legend__shape--square { border-radius: 2px; }
 .intel-route-type-legend__shape--circle { border-radius: 50%; }
 .intel-route-type-legend__shape--hexagon { clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%); background: #547189; }
+.intel-route-type-legend__shape--common { border-radius: 50%; border-color: #7b8a9a; background: #fff; }
+.intel-route-type-legend__shape--milestone { border-radius: 3px; border-color: #2563eb; background: #dbeafe; }
+.intel-route-type-legend__shape--focus { border-radius: 50%; border-color: #2563eb; background: #2563eb; box-shadow: 0 0 0 3px #bfdbfe; }
 
 .intel-route-legend__item {
   display: inline-flex;
@@ -1372,6 +1375,7 @@ button.intel-list-card:hover {
   opacity: .46;
   filter: grayscale(1);
 }
+.intel-route-legend__item small { border-radius: 999px; padding: 2px 5px; background: #dbeafe; color: #1d4ed8; font-size: 8px; }
 
 .intel-route-svg-viewport {
   overflow-x: auto;
@@ -1408,6 +1412,8 @@ button.intel-list-card:hover {
 .intel-route-series { transition: opacity .2s ease; }
 .intel-route-series.is-muted { opacity: .42; }
 .intel-route-series__path { filter: drop-shadow(0 3px 3px rgba(30, 64, 100, .12)); }
+.intel-route-tree-branch { stroke: #9aa9b7; stroke-width: 2; opacity: .62; transition: opacity .18s ease, stroke-width .18s ease; }
+.intel-route-tree-branch.is-active { stroke: #526b80; stroke-width: 3; opacity: .95; }
 
 .intel-route-point {
   cursor: pointer;
@@ -1418,6 +1424,12 @@ button.intel-list-card:hover {
   transform-origin: center;
   transition: transform .16s ease, filter .16s ease;
 }
+.intel-route-point--common .intel-route-point__symbol { filter: none; }
+.intel-route-point--common:hover .intel-route-point__symbol,
+.intel-route-point--common:focus .intel-route-point__symbol,
+.intel-route-point--common.is-selected .intel-route-point__symbol { transform: scale(1.45); filter: drop-shadow(0 0 5px rgba(71, 85, 105, .35)); }
+.intel-route-point__focus-halo { stroke-dasharray: 4 3; animation: intel-route-focus-spin 9s linear infinite; transform-box: fill-box; transform-origin: center; }
+.intel-route-point__focus-core { pointer-events: none; }
 .intel-route-point:hover .intel-route-point__symbol,
 .intel-route-point:focus .intel-route-point__symbol,
 .intel-route-point.is-selected .intel-route-point__symbol {
@@ -1441,6 +1453,8 @@ button.intel-list-card:hover {
   0% { transform: scale(.65); opacity: .8; }
   75%, 100% { transform: scale(1.35); opacity: 0; }
 }
+
+@keyframes intel-route-focus-spin { to { transform: rotate(360deg); } }
 
 .intel-route-relation { opacity: .9; }
 .intel-route-relation__label {
@@ -1531,6 +1545,8 @@ button.intel-list-card:hover {
 .intel-route-detail__relations { margin-top: 12px; border-top: 1px solid #dbe7f0; padding-top: 10px; }
 .intel-route-detail__relations strong { color: #28465f; font-size: 12px; }
 .intel-route-detail__relations p { color: #52697d; font-size: 11px; line-height: 1.55; }
+.intel-route-detail__relations--tree { border: 1px dashed #b8c7d4; border-radius: 8px; padding: 9px 10px; background: #f8fafc; }
+.intel-route-detail__relations--tree small { display: block; color: #7b8a99; font-size: 9px; line-height: 1.45; }
 .intel-route-detail__note { display: block; margin-top: 10px; color: #718397; line-height: 1.5; }
 
 /* Interactive radar and gap workbench */
@@ -1653,6 +1669,7 @@ button.intel-list-card:hover {
 @media (prefers-reduced-motion: reduce) {
   .intel-progress__bar { transition: none; }
   .intel-route-point__pulse { animation: none; }
+  .intel-route-point__focus-halo { animation: none; }
 }
 
 .intel-gap-method {

@@ -455,7 +455,7 @@
     }
   ],
   "route_chart": {
-    "title": "Lattice Mesh关键技术路线演化",
+    "title": "分布式任务数据基础设施技术树（Lattice Mesh研究分支）",
     "target_id": "lattice-mesh",
     "target_name": "Lattice Mesh",
     "maturity_stages": [
@@ -471,7 +471,8 @@
         "color": "#2563eb",
         "service": "在弱网、断连和多节点环境中保持数据连接与任务连续性。",
         "technology": "去中心化Mesh、动态发现、分布式状态同步与自适应路由。",
-        "maturity_dimension": "resilient-network"
+        "maturity_dimension": "resilient-network",
+        "focus_branch": true
       },
       {
         "id": "data-processing",
@@ -551,6 +552,46 @@
           }
         ]
       },
+      "R022": {
+        "time_value": 2026.75,
+        "node_kind": "focus",
+        "is_key_maturity": true,
+        "evidence_level": "高",
+        "maturity_dimension": "core-network",
+        "evidence_type": "关键技术研究对象",
+        "evidence_label": "Lattice Mesh · 成熟度分析对象",
+        "evidence_publisher": "多源公开材料综合",
+        "evidence_date": "当前研判",
+        "evidence_summary": "该节点不是单一事件，而是本次调研选中的关键技术对象。其成熟度由专利原理、多站点演示、真实断链恢复、生产协议和体系集成等证据累计研判。",
+        "evidence_supports": "用于将分布式网络分支上的连续演进证据汇聚到 Lattice Mesh 的分维度成熟度分析。",
+        "evidence_boundary": "该节点表示分析对象及证据汇聚位置，不表示2026年8月发生了一次新的产品发布，也不代表其他通用技术被Lattice直接采用。",
+        "evidence_materials": [
+          {
+            "type": "发明专利",
+            "title": "US10506436B1 · Lattice mesh",
+            "publisher": "Anduril Industries / USPTO",
+            "date": "2018—2019",
+            "supports": "支撑早期节点接入、身份授权、资产登记和消息发布原理。",
+            "url": "https://patents.google.com/patent/US10506436B1/en"
+          },
+          {
+            "type": "会议论文",
+            "title": "Resilient Networking Keeps Critical Sensors Connected",
+            "publisher": "AMOS Conference · Anduril / U.S. Space Force",
+            "date": "2023",
+            "supports": "支撑多站点传输、自动选路和真实断链恢复证据。",
+            "url": "https://amostech.com/TechnicalPapers/2023/Poster/Pruden.pdf"
+          },
+          {
+            "type": "官方产品资料",
+            "title": "Lattice Mesh",
+            "publisher": "Anduril Industries",
+            "date": "持续更新",
+            "supports": "支撑Distributed Mesh、Translate & Normalize和Intelligent Routing等公开能力描述。",
+            "url": "https://www.anduril.com/lattice/lattice-mesh"
+          }
+        ]
+      },
       "R018": {
         "evidence_level": "高",
         "maturity_dimension": "core-network",
@@ -614,6 +655,115 @@
       { "source": "R008", "target": "R015", "type": "模式治理", "description": "数据处理侧的Schema能力转化为开放集成治理能力。" },
       { "source": "R006", "target": "R014", "type": "能力开放", "description": "多源融合能力通过开发工具链向第三方开放。" },
       { "source": "R015", "target": "R016", "type": "工具演进", "description": "Schema生命周期治理进一步支撑AI辅助开发。" }
+    ],
+    "common_nodes": [
+      {
+        "route_id": "C001",
+        "阶段": 1,
+        "时间": "2015",
+        "节点名称": "DDS 数据中心发布订阅",
+        "节点说明": "数据中心发布订阅、主题类型和QoS构成分布式实时数据交换的通用技术底座。",
+        "节点状态": "通用标准",
+        "数据属性": "公共技术背景",
+        "node_kind": "common",
+        "evidence_level": "高",
+        "evidence_type": "国际标准",
+        "evidence_label": "OMG Data Distribution Service v1.4",
+        "evidence_publisher": "Object Management Group",
+        "evidence_date": "2015",
+        "evidence_summary": "DDS定义数据中心发布订阅模型，使应用围绕主题、类型和QoS共享数据。这里仅作为路线的公共技术背景。",
+        "evidence_supports": "解释数据分发、实时发布订阅和QoS如何推动后续数据Mesh与异构数据路线。",
+        "evidence_boundary": "表示通用技术推动关系，不表示Lattice使用或实现了特定DDS产品。",
+        "evidence_url": "https://www.omg.org/spec/DDS/1.4/PDF/changebar"
+      },
+      {
+        "route_id": "C002",
+        "阶段": 1,
+        "时间": "2018",
+        "节点名称": "云边协同与边缘容器",
+        "节点说明": "边缘应用管理、云边元数据同步和节点自治成为通用工程能力。",
+        "节点状态": "通用开源技术",
+        "数据属性": "公共技术背景",
+        "node_kind": "common",
+        "evidence_level": "高",
+        "evidence_type": "开源技术",
+        "evidence_label": "KubeEdge · Kubernetes Native Edge Computing Framework",
+        "evidence_publisher": "Cloud Native Computing Foundation",
+        "evidence_date": "2018起",
+        "evidence_summary": "KubeEdge将容器编排扩展到边缘，并提供边缘应用管理、元数据同步和设备管理。这里作为边缘计算分支的公共背景。",
+        "evidence_supports": "解释边缘节点自治、云边协同和大规模终端管理如何推动后续边缘路线。",
+        "evidence_boundary": "不表示Lattice采用KubeEdge，仅表示同类工程问题已有公共技术路径。",
+        "evidence_url": "https://www.cncf.io/projects/kubeedge/"
+      },
+      {
+        "route_id": "C003",
+        "阶段": 1,
+        "时间": "2019",
+        "节点名称": "工作负载身份与短期证书",
+        "节点说明": "动态异构环境中的工作负载身份、证书签发与双向认证形成公共安全能力。",
+        "节点状态": "通用规范",
+        "数据属性": "公共技术背景",
+        "node_kind": "common",
+        "evidence_level": "高",
+        "evidence_type": "开放规范",
+        "evidence_label": "SPIFFE Overview",
+        "evidence_publisher": "SPIFFE Project / CNCF",
+        "evidence_date": "持续演进",
+        "evidence_summary": "SPIFFE面向动态异构环境定义工作负载身份与短期身份文档，为分布式系统的可信接入提供通用参考。",
+        "evidence_supports": "解释身份引导、证书签发与跨环境认证如何推动可信Mesh节点接入。",
+        "evidence_boundary": "不表示Lattice采用SPIFFE；这里只建立通用技术概念与目标专利原理之间的分析关系。",
+        "evidence_url": "https://spiffe.io/docs/latest/spiffe-about/overview/"
+      },
+      {
+        "route_id": "C004",
+        "阶段": 2,
+        "时间": "2020",
+        "节点名称": "JSON Schema 与版本治理",
+        "节点说明": "Schema核心、校验和版本兼容机制推动异构数据标准化与开放集成。",
+        "节点状态": "通用规范",
+        "数据属性": "公共技术背景",
+        "node_kind": "common",
+        "evidence_level": "高",
+        "evidence_type": "开放规范",
+        "evidence_label": "JSON Schema 2020-12",
+        "evidence_publisher": "JSON Schema Project",
+        "evidence_date": "2020-12",
+        "evidence_summary": "JSON Schema将数据结构描述和校验规则标准化，为Schema注册、兼容性检查和版本治理提供公共基础。",
+        "evidence_supports": "解释Schema治理如何推动异构数据转换与开发者生态分支。",
+        "evidence_boundary": "不表示Lattice内部Schema等同JSON Schema，仅表示公共方法对路线的推动作用。",
+        "evidence_url": "https://json-schema.org/specification"
+      },
+      {
+        "route_id": "C005",
+        "阶段": 1,
+        "时间": "2019",
+        "节点名称": "Local-first 与CRDT状态合并",
+        "节点说明": "离线优先、状态复制和无冲突合并研究推动断连自治与恢复后收敛。",
+        "节点状态": "通用研究",
+        "数据属性": "公共技术背景",
+        "node_kind": "common",
+        "evidence_level": "中高",
+        "evidence_type": "研究论文",
+        "evidence_label": "Local-first software",
+        "evidence_publisher": "Ink & Switch",
+        "evidence_date": "2019",
+        "evidence_summary": "Local-first研究强调本地可用、跨设备同步和所有权，CRDT为并发状态的自动合并提供重要技术路径。",
+        "evidence_supports": "解释断连期间可用、恢复同步和分布式状态收敛如何推动弱网与边缘路线。",
+        "evidence_boundary": "不表示Lattice采用特定CRDT实现，仅作为分布式状态研究的公共技术背景。",
+        "evidence_url": "https://www.inkandswitch.com/essay/local-first/"
+      }
+    ],
+    "branch_relations": [
+      { "source": "C001", "target": "R018", "type": "数据分发基础" },
+      { "source": "C001", "target": "R005", "type": "发布订阅到数据Mesh" },
+      { "source": "C002", "target": "R009", "type": "边缘工程基础" },
+      { "source": "C002", "target": "R020", "type": "节点自治支撑" },
+      { "source": "C003", "target": "R017", "type": "身份与可信接入" },
+      { "source": "C003", "target": "R013", "type": "开放接入安全" },
+      { "source": "C004", "target": "R005", "type": "Schema标准化" },
+      { "source": "C004", "target": "R013", "type": "开放接口治理" },
+      { "source": "C005", "target": "R001", "type": "断连状态收敛" },
+      { "source": "C005", "target": "R009", "type": "边缘自治" }
     ]
   },
   "route_evolution": [
@@ -847,6 +997,17 @@
       "关联事件": "E013",
       "节点状态": "AI辅助开发",
       "数据属性": "事实+归纳"
+    },
+    {
+      "route_id": "R022",
+      "技术路线": "分布式网络",
+      "阶段": 4,
+      "时间": "当前",
+      "节点名称": "Lattice Mesh（关键技术研究对象）",
+      "节点说明": "位于分布式网络分支，汇聚专利、演示、真实运行和体系集成证据；仅该节点进入成熟度分析。",
+      "关联事件": "E003;E005;E009",
+      "节点状态": "研究对象",
+      "数据属性": "多源证据综合研判"
     }
   ],
   "gap_analysis": [
@@ -1092,7 +1253,7 @@
       "成果名称": "Lattice Mesh关键技术路线演化",
       "分析对象": "Lattice Mesh",
       "成果类型": "技术路线图",
-      "时间范围": "2024-2026",
+      "时间范围": "2015-当前",
       "状态": "已生成",
       "核心结论摘要": "网络、数据、边缘计算和开放集成四条技术路线持续汇聚，技术定位逐步向共同数据底座演进。",
       "前端入口": "/route/P002"
